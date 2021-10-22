@@ -23,12 +23,12 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = 
 # Controls
 ###################################
 
-#query_test = """In this paper, we propose a novel neural network model called RNN Encoder-Decoder that consists of two recurrent neural networks (RNN). One RNN encodes a sequence of symbols into a fixed-length vector representation, and the other decodes the representation into another sequence of symbols. The encoder and decoder of the proposed model are jointly trained to maximize the conditional probability of a target sequence given a source sequence. The performance of a statistical machine translation system is empirically found to improve by using the conditional probabilities of phrase pairs computed by the RNN Encoder-Decoder as an additional feature in the existing log-linear model. Qualitatively, we show that the proposed model learns a semantically and syntactically meaningful representation of linguistic phrases."""
+query_test = """In this paper, we propose a novel neural network model called RNN Encoder-Decoder that consists of two recurrent neural networks (RNN). One RNN encodes a sequence of symbols into a fixed-length vector representation, and the other decodes the representation into another sequence of symbols. The encoder and decoder of the proposed model are jointly trained to maximize the conditional probability of a target sequence given a source sequence. The performance of a statistical machine translation system is empirically found to improve by using the conditional probabilities of phrase pairs computed by the RNN Encoder-Decoder as an additional feature in the existing log-linear model. Qualitatively, we show that the proposed model learns a semantically and syntactically meaningful representation of linguistic phrases."""
 
 #query = dbc.Card([html.H2("Query"), dcc.Textarea(rows = 5, id = "query", value = query_test)], body = True)
 query = dbc.Card([html.H2("Query"), 
-                  #dbc.Card(dcc.Textarea(rows = 9, id = "query", value = query_test, style = {"font-size":"12px"}))], 
-                  dbc.Card(dcc.Textarea(rows = 9, id = "query", style = {"font-size":"12px"}))], 
+                  dbc.Card(dcc.Textarea(rows = 9, id = "query", value = query_test, style = {"font-size":"12px"}))], 
+                  #dbc.Card(dcc.Textarea(rows = 9, id = "query", style = {"font-size":"12px"}))], 
                  body = True)
 
 view_document = dbc.Card(dbc.Button("View document", id = "view_document"))
