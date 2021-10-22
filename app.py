@@ -46,11 +46,13 @@ parameters = html.Table(parameters_body)
 settings_adjust = dbc.Card(dbc.Button("Adjust settings", id = "settings_adjust"))
 
 #settings_panel = dbc.Card([dbc.Row([dbc.Col(html.H2("Settings")), dbc.Col(settings_adjust)]), parameters], body = True)
-settings_panel = dbc.Card([dbc.Row([dbc.Col(html.H2("Settings")), dbc.Col(settings_adjust)]), parameters], body = True)
+settings_panel = dbc.Card([html.H2("Settings"), parameters], body = True)
 
-display_highlights = dbc.Card(dbc.Button("Update highlights", id = "display_highlights"))
+#display_highlights = dbc.Card(dbc.Button("Update highlights", id = "display_highlights"))
 
-controls = dbc.Col([query, buttons, settings_panel, display_highlights], width = 4)
+
+#controls = dbc.Col([query, buttons, settings_panel, display_highlights], width = 4)
+controls = dbc.Col([query, buttons, settings_panel, settings_adjust], width = 4)
 
 ###################################
 # Summary
