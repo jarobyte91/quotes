@@ -15,6 +15,8 @@ from dash_extensions import Download
 from dash_extensions.snippets import send_file
 import base64
 import lib
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
 server = Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = server)
@@ -165,7 +167,7 @@ histogram = dbc.Col(dcc.Graph(id = "histogram"))
 # lineplot = dbc.Col(dcc.Graph(l, id = "lineplot"))
 lineplot = dbc.Col(dcc.Graph(id = "lineplot"))
 window_size_row = [html.Td(html.Strong("Window size:")), 
-                   html.Td(dcc.Input(value = 256, 
+                   html.Td(dcc.Input(value = 32, 
                                      style = {"text-align":"right"},
                                      id = "window_size"),)]
                            #style = {"text-align":"right"})]
@@ -360,9 +362,9 @@ def click_highlight(*args):
     State("store_highlights", "data"),
 )
 def update_highlights(*args):
-    print("review_highlight")
+    #print("review_highlight")
     word_scores = args[-3]
-    print("word_scores json", len(word_scores))
+    #print("word_scores json", len(word_scores))
     threshold = args[-2]
     if word_scores:
         word_scores = pd.read_json(word_scores)
@@ -371,9 +373,9 @@ def update_highlights(*args):
         highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
     else:
         highlights = []
-    print("len highlights", len(highlights))
+    #print("len highlights", len(highlights))
     ctx = dash.callback_context
-    #print(ctx.triggered)
+    ##print(ctx.triggered)
     prop_id = ctx.triggered[0]["prop_id"]
     value = ctx.triggered[0]["value"]
     reviews = 0              # 
@@ -383,7 +385,7 @@ def update_highlights(*args):
         index = index_type["index"]
         type = index_type["type"]
         if value is not None:
-            print("highlights", highlights[:5])
+            #print("highlights", highlights[:5])
             highlights = json.loads(args[-1])
             if type == "accept":
                 highlights[index]["accepted"] = True 
@@ -392,7 +394,7 @@ def update_highlights(*args):
             else:
                 highlights[index]["accepted"] = None 
             reviews = len([h for h in highlights if h["accepted"] is not None])
-    print("final len highlights", len(highlights))
+    #print("final len highlights", len(highlights))
     return json.dumps(highlights), reviews
 
 @app.callback(
@@ -473,30 +475,46 @@ def upload_document(contents):
     Output("summary_body", "children"),
     Input("store_highlights", "data"),
     State("store_tokens", "data"),
+    State("store_word_scores", "data"),
+    State("window_size", "value"),
+    State("query", "value"),
 )
-def update_summary_display(highlights, tokens):
-    if highlights and tokens:
-        #print("update_summary_display", highlights[:5])
+def update_summary_display(highlights, tokens, word_scores, window_size, query):
+    if highlights and tokens and word_scores and window_size and query:
+        window_size = int(window_size)
+        ##print("update_summary_display", highlights[:5])
         highlights = json.loads(highlights)
         tokens = json.loads(tokens)
+        windows = ["".join(tokens[i:i + window_size]) for i in range(0, len(tokens) - window_size + 1)]
+        #model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]")
+        #model = CountVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
+        model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
+        window_embeddings = model.fit_transform(windows)
+        query_embedding = model.transform([query])
         summary_body = []
-        print("update_summmary_display", len(highlights))
         for i, hl in enumerate(highlights):
-            content = dbc.Button("".join(tokens[hl["start"]:hl["end"]]), 
+            text = "".join(tokens[hl["start"]:hl["end"]])
+            #score = html.Td(round(word_scores.avg_score[hl["start"]:hl["end"]].median(), 3))
+            highlight_embedding = model.transform([text])
+            similarity = cosine_similarity(query_embedding, highlight_embedding)[0][0]
+            ##print(similarity)
+            score = html.Td(round(similarity, 3))
+            content = html.Td(dbc.Button(text, 
                                  id = dict(type = "highlight", index = i), 
-                                 color = "link")
-            reject = dbc.Button(f"✕", 
-                                id = dict(type = "reject", index = i), 
-                                style = {"float":"right", "background":"firebrick"})
+                                 color = "link"))
             accept = dbc.Button(f"✔", 
                                 id = dict(type = "accept", index = i), 
-                                style = {"float":"right", "background":"seagreen"})
-            row = dbc.Card(dbc.Container([content, reject, accept], fluid = True), 
+                                style = {"background":"seagreen"})
+            reject = dbc.Button(f"✕", 
+                                id = dict(type = "reject", index = i), 
+                                style = {"background":"firebrick"})
+
+            row = html.Tr([score, content, html.Td([accept, reject])], 
                            id = dict(type = "highlight_card", index = i))
             summary_body.append(row)
     else:
         summary_body = []
-    return summary_body
+    return dbc.Table(summary_body, bordered = True)
 
 
 @app.callback(
@@ -507,7 +525,7 @@ def update_summary_display(highlights, tokens):
 def update_document_modal(tokens, highlights):
     tokens = json.loads(tokens)
     highlights = json.loads(highlights)
-    print("update_document_modal", len(highlights))
+    #print("update_document_modal", len(highlights))
     output = lib.render_document(tokens, highlights)
     return output
 
@@ -558,10 +576,10 @@ def compute_word_scores(submit, query, tokens, window_size):
     #                        yaxis_range = (0, 1))
     # lineplot.add_hline(y = threshold, annotation_text = "Threshold")
     # for i, h in enumerate(highlights):
-    #     print(i)
-    #     print("".join(tokens[h["start"]:h["end"]]))
+    #     #print(i)
+    #     #print("".join(tokens[h["start"]:h["end"]]))
     #return json.dumps(highlights)#, histogram, lineplot, words, lines
-#    print("compute_word_scores", word_scores)
+#    #print("compute_word_scores", word_scores)
 #    return word_scores.to_json()#json.dumps(highlights)#, histogram, lineplot, words, lines
     return output
 
@@ -575,7 +593,7 @@ def compute_word_scores(submit, query, tokens, window_size):
 )
 def update_plots(threshold, word_scores):
     #highlights = json.loads(highlights)
-    #print("update_plots", len(highlights))
+    ##print("update_plots", len(highlights))
     histogram = px.histogram()
     lineplot = px.scatter()
     words = 0
@@ -583,7 +601,7 @@ def update_plots(threshold, word_scores):
     threshold = float(threshold) 
     if word_scores:
         word_scores = pd.read_json(word_scores)
-        #print(highlights[:5])
+        ##print(highlights[:5])
 #        spans = lib.find_spans(word_scores.avg_score, threshold = threshold)
 #        highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
         histogram = px.histogram(word_scores, "avg_score")

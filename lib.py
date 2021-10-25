@@ -4,7 +4,7 @@ import re
 from sentence_transformers import SentenceTransformer
 import pandas as pd
 from sklearn.metrics.pairwise import cosine_similarity
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 import torch
 import numpy as np
 from itertools import zip_longest
@@ -84,7 +84,8 @@ def compute_scores(tokens, query, window_size):
     windows = [tokens[i:i + window_size] for i in range(0, len(tokens) - window_size + 1)]
     windows_df = pd.DataFrame({"tokens":windows, "text":["".join(w) for w in windows]})
 
-    model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z]")
+    #model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]")
+    model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
     window_embeddings = model.fit_transform(windows_df.text)
     query_embedding = model.transform([query])
 
