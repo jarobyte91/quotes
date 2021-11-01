@@ -17,6 +17,7 @@ import base64
 import lib
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+from sentence_transformers import SentenceTransformer
 
 server = Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = server)
@@ -167,7 +168,7 @@ histogram = dbc.Col(dcc.Graph(id = "histogram"))
 # lineplot = dbc.Col(dcc.Graph(l, id = "lineplot"))
 lineplot = dbc.Col(dcc.Graph(id = "lineplot"))
 window_size_row = [html.Td(html.Strong("Window size:")), 
-                   html.Td(dcc.Input(value = 32, 
+                   html.Td(dcc.Input(value = 64, 
                                      style = {"text-align":"right"},
                                      id = "window_size"),)]
                            #style = {"text-align":"right"})]
@@ -371,6 +372,7 @@ def update_highlights(*args):
         threshold = float(threshold)
         spans = lib.find_spans(word_scores.avg_score, threshold = threshold)
         highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
+        #print(tokens[h["start"]:h["end"]] for h in [highlights[:5]])
     else:
         highlights = []
     #print("len highlights", len(highlights))
@@ -479,26 +481,28 @@ def upload_document(contents):
     State("window_size", "value"),
     State("query", "value"),
 )
-def update_summary_display(highlights, tokens, word_scores, window_size, query):
+def update_summary_display_dl(highlights, tokens, word_scores, window_size, query):
     if highlights and tokens and word_scores and window_size and query:
-        window_size = int(window_size)
         ##print("update_summary_display", highlights[:5])
         highlights = json.loads(highlights)
         tokens = json.loads(tokens)
-        windows = ["".join(tokens[i:i + window_size]) for i in range(0, len(tokens) - window_size + 1)]
-        #model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]")
-        #model = CountVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
-        model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
-        window_embeddings = model.fit_transform(windows)
-        query_embedding = model.transform([query])
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        query_embedding = model.encode([query])
+        #print("query_embedding", query_embedding.shape)
+        highlight_text = ["".join(tokens[hl["start"]:hl["end"]]) for hl in highlights]
+        #print(highlight_text[:5])
+        if len(highlight_text) > 0:
+            highlight_embeddings = model.encode(highlight_text)
+            similarities = cosine_similarity(query_embedding, highlight_embeddings).flatten().tolist()
+        else:
+            similarities = []
         summary_body = []
         for i, hl in enumerate(highlights):
             text = "".join(tokens[hl["start"]:hl["end"]])
+            #print(text)
             #score = html.Td(round(word_scores.avg_score[hl["start"]:hl["end"]].median(), 3))
-            highlight_embedding = model.transform([text])
-            similarity = cosine_similarity(query_embedding, highlight_embedding)[0][0]
             ##print(similarity)
-            score = html.Td(round(similarity, 3))
+            score = html.Td(round(similarities[i], 3))
             content = html.Td(dbc.Button(text, 
                                  id = dict(type = "highlight", index = i), 
                                  color = "link"))
@@ -515,6 +519,54 @@ def update_summary_display(highlights, tokens, word_scores, window_size, query):
     else:
         summary_body = []
     return dbc.Table(summary_body, bordered = True)
+
+
+
+
+# @app.callback(
+#     Output("summary_body", "children"),
+#     Input("store_highlights", "data"),
+#     State("store_tokens", "data"),
+#     State("store_word_scores", "data"),
+#     State("window_size", "value"),
+#     State("query", "value"),
+# )
+# def update_summary_display(highlights, tokens, word_scores, window_size, query):
+#     if highlights and tokens and word_scores and window_size and query:
+#         window_size = int(window_size)
+#         ##print("update_summary_display", highlights[:5])
+#         highlights = json.loads(highlights)
+#         tokens = json.loads(tokens)
+#         windows = ["".join(tokens[i:i + window_size]) for i in range(0, len(tokens) - window_size + 1)]
+#         #model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]")
+#         #model = CountVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
+#         model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
+#         window_embeddings = model.fit_transform(windows)
+#         query_embedding = model.transform([query])
+#         summary_body = []
+#         for i, hl in enumerate(highlights):
+#             text = "".join(tokens[hl["start"]:hl["end"]])
+#             #score = html.Td(round(word_scores.avg_score[hl["start"]:hl["end"]].median(), 3))
+#             highlight_embedding = model.transform([text])
+#             similarity = cosine_similarity(query_embedding, highlight_embedding)[0][0]
+#             ##print(similarity)
+#             score = html.Td(round(similarity, 3))
+#             content = html.Td(dbc.Button(text, 
+#                                  id = dict(type = "highlight", index = i), 
+#                                  color = "link"))
+#             accept = dbc.Button(f"✔", 
+#                                 id = dict(type = "accept", index = i), 
+#                                 style = {"background":"seagreen"})
+#             reject = dbc.Button(f"✕", 
+#                                 id = dict(type = "reject", index = i), 
+#                                 style = {"background":"firebrick"})
+# 
+#             row = html.Tr([score, content, html.Td([accept, reject])], 
+#                            id = dict(type = "highlight_card", index = i))
+#             summary_body.append(row)
+#     else:
+#         summary_body = []
+#     return dbc.Table(summary_body, bordered = True)
 
 
 @app.callback(
@@ -551,7 +603,7 @@ def compute_word_scores(submit, query, tokens, window_size):
     output = ""
     if query and tokens:
         tokens = json.loads(tokens)
-        word_scores = lib.compute_scores(tokens, query, window_size = window_size)
+        word_scores = lib.compute_scores_sentence_dl(tokens, query, window_size = window_size)
         output = word_scores.to_json()
         #spans = lib.find_spans(scores.avg_score, threshold = threshold)
         #highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
