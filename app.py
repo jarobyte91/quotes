@@ -27,34 +27,20 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = 
 ###################################
 
 query_test = """In this paper, we propose a novel neural network model called RNN Encoder-Decoder that consists of two recurrent neural networks (RNN). One RNN encodes a sequence of symbols into a fixed-length vector representation, and the other decodes the representation into another sequence of symbols. The encoder and decoder of the proposed model are jointly trained to maximize the conditional probability of a target sequence given a source sequence. The performance of a statistical machine translation system is empirically found to improve by using the conditional probabilities of phrase pairs computed by the RNN Encoder-Decoder as an additional feature in the existing log-linear model. Qualitatively, we show that the proposed model learns a semantically and syntactically meaningful representation of linguistic phrases."""
-
-#query = dbc.Card([html.H2("Query"), dcc.Textarea(rows = 5, id = "query", value = query_test)], body = True)
 query = dbc.Card([html.H2("Query"), 
                   dbc.Card(dcc.Textarea(rows = 9, id = "query", value = query_test, style = {"font-size":"12px"}))], 
                   #dbc.Card(dcc.Textarea(rows = 9, id = "query", style = {"font-size":"12px"}))], 
                  body = True)
-
 view_document = dbc.Card(dbc.Button("View document", id = "view_document"))
 upload = dbc.Card(dbc.Button(dcc.Upload('Upload paper', id = "upload")))
-
 buttons = dbc.Row([dbc.Col(upload), dbc.Col(view_document)])
-
 threshold = dbc.Card([html.H3("Threshold")])
-
 row1 = html.Tr([html.Td(html.Strong("Window size:")), html.Td(id = "window_size_front", style = {"text-align":"right"})])
 row2 = html.Tr([html.Td(html.Strong("Threshold:")), html.Td(id = "threshold_front", style = {"text-align":"right"})])
 parameters_body = [row1, row2]
 parameters = html.Table(parameters_body)
-
 settings_adjust = dbc.Card(dbc.Button("Adjust settings", id = "settings_adjust"))
-
-#settings_panel = dbc.Card([dbc.Row([dbc.Col(html.H2("Settings")), dbc.Col(settings_adjust)]), parameters], body = True)
 settings_panel = dbc.Card([html.H2("Settings"), parameters], body = True)
-
-#display_highlights = dbc.Card(dbc.Button("Update highlights", id = "display_highlights"))
-
-
-#controls = dbc.Col([query, buttons, settings_panel, display_highlights], width = 4)
 controls = dbc.Col([query, buttons, settings_panel, settings_adjust], width = 4)
 
 ###################################
@@ -73,21 +59,16 @@ row3 = html.Tr([html.Td(html.Strong("Reviewed: ")),
                         style = {"text-align":"right"})])
 counts_body = [row1, row2, row3]
 counts = dbc.Card(html.Table(counts_body), body = True)
-
 summary_title = dbc.CardGroup([dbc.Card(html.H2("Highlights"), body = True), counts])
-
 view_summary = dbc.Button(
     "View summary",
     id="view_summary",
     n_clicks=0,
 )
-
 summary_body = dbc.Card(id = "summary_body",
                         style = {"height":"330px", 
                                  "overflow-y":"scroll", 
                                  "background-color":"lightgrey"})
-
-#summary_display = dbc.Col(dbc.Card([summary_title, summary_body, dbc.Card(view_summary)], body = True))
 summary_display = dbc.Col([summary_title, summary_body, dbc.Card(view_summary)])
 
 ####################################
@@ -147,25 +128,7 @@ summary_modal = dbc.Modal(
 ##################################
 # Settings modal
 ##################################
-
-# h = px.histogram()
-# l = px.line()
-# height = 300
-# h.update_layout(xaxis_title = "Word score", 
-#                 yaxis_title = "Frequency", 
-#                 title = "Distribution of the word scores",
-#                 height = height,
-#                 xaxis_range = (0, 1))
-# #histogram.add_vline(x = threshold, annotation_text = "Threshold")
-# l.update_layout(xaxis_title = "Position in document", 
-#                 yaxis_title = "Word score", 
-#                 title = "Evolution of the word score in the paper",
-#                 height = height,
-#                 yaxis_range = (0, 1))
-# 
-# histogram = dbc.Col(dcc.Graph(h, id = "histogram"))
 histogram = dbc.Col(dcc.Graph(id = "histogram"))
-# lineplot = dbc.Col(dcc.Graph(l, id = "lineplot"))
 lineplot = dbc.Col(dcc.Graph(id = "lineplot"))
 window_size_row = [html.Td(html.Strong("Window size:")), 
                    html.Td(dcc.Input(value = 64, 
@@ -176,43 +139,13 @@ threshold_row = [html.Td(html.Strong("Threshold:")),
                  html.Td(dcc.Input(value = 0.5, 
                          style = {"text-align":"right"}, 
                          id = "threshold"), )]
-                 #style = {"text-align":"right"})]
 highlighted_words_modal = html.Td(0, id = "highlighted_words_modal", style = {"text-align":"right"})
 highlighted_lines_modal = html.Td(0, id = "highlighted_lines_modal", style = {"text-align":"right"})
 highlighted_words_row = [html.Td(html.Strong("Highlighted words:")), highlighted_words_modal]
 highlighted_lines_row = [html.Td(html.Strong("Highlights:")), highlighted_lines_modal]
 parameters = dbc.Card(html.Table([html.Tr(window_size_row + highlighted_words_row),
                                   html.Tr(threshold_row + highlighted_lines_row)]))
-#parameters_table = dbc.Card(html.Table(
-#    [
-#        window_size_row,
-#        threshold_row,
-#    ]
-#) )
-#statistics_table = dbc.Card(html.Table(
-#    [
-#        highlighted_word_row,
-#        highlighted_lines_row
-#    ]
-#))
-
-
-
-#parameters_table = dbc.Row([dbc.Col(parameters_table), dbc.Col(dbc.Card(""))])
-#parameters = dbc.Card([
-#                        #html.H2("Parameters"), 
-#                        dbc.Row([dbc.Col(parameters_table), dbc.Col(statistics_table)])
-#                      ],
-#                      body = True
-#             ) 
-
-#parameters = dbc.Row([dbc.Col(parameters_table), dbc.Col(statistics_table)])
-#parameters = dbc.CardGroup([parameters_table, statistics_table])
-#parameters = dbc.CardGroup([parameters_table, statistics_table])
 settings = html.Div([parameters, dbc.Row([histogram, lineplot])])
-#settings = dbc.Row([dbc.Col([dbc.Row(parameters), dbc.Row(histogram)]), dbc.Col(lineplot)])
-#settings = html.([dbc.Col([dbc.Row(parameters), dbc.Row(histogram)]), dbc.Col(lineplot)])
-
 settings_close = dbc.Button("Close", id = "settings_close")
 submit = dbc.Card(dbc.Button("Compute word scores", id = "submit"))
 
@@ -363,21 +296,16 @@ def click_highlight(*args):
     State("store_highlights", "data"),
 )
 def update_highlights(*args):
-    #print("review_highlight")
     word_scores = args[-3]
-    #print("word_scores json", len(word_scores))
     threshold = args[-2]
     if word_scores:
         word_scores = pd.read_json(word_scores)
         threshold = float(threshold)
         spans = lib.find_spans(word_scores.avg_score, threshold = threshold)
         highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
-        #print(tokens[h["start"]:h["end"]] for h in [highlights[:5]])
     else:
         highlights = []
-    #print("len highlights", len(highlights))
     ctx = dash.callback_context
-    ##print(ctx.triggered)
     prop_id = ctx.triggered[0]["prop_id"]
     value = ctx.triggered[0]["value"]
     reviews = 0              # 
@@ -387,7 +315,6 @@ def update_highlights(*args):
         index = index_type["index"]
         type = index_type["type"]
         if value is not None:
-            #print("highlights", highlights[:5])
             highlights = json.loads(args[-1])
             if type == "accept":
                 highlights[index]["accepted"] = True 
@@ -396,7 +323,6 @@ def update_highlights(*args):
             else:
                 highlights[index]["accepted"] = None 
             reviews = len([h for h in highlights if h["accepted"] is not None])
-    #print("final len highlights", len(highlights))
     return json.dumps(highlights), reviews
 
 @app.callback(
@@ -483,14 +409,11 @@ def upload_document(contents):
 )
 def update_summary_display_dl(highlights, tokens, word_scores, window_size, query):
     if highlights and tokens and word_scores and window_size and query:
-        ##print("update_summary_display", highlights[:5])
         highlights = json.loads(highlights)
         tokens = json.loads(tokens)
         model = SentenceTransformer('all-MiniLM-L6-v2')
         query_embedding = model.encode([query])
-        #print("query_embedding", query_embedding.shape)
         highlight_text = ["".join(tokens[hl["start"]:hl["end"]]) for hl in highlights]
-        #print(highlight_text[:5])
         if len(highlight_text) > 0:
             highlight_embeddings = model.encode(highlight_text)
             similarities = cosine_similarity(query_embedding, highlight_embeddings).flatten().tolist()
@@ -499,9 +422,6 @@ def update_summary_display_dl(highlights, tokens, word_scores, window_size, quer
         summary_body = []
         for i, hl in enumerate(highlights):
             text = "".join(tokens[hl["start"]:hl["end"]])
-            #print(text)
-            #score = html.Td(round(word_scores.avg_score[hl["start"]:hl["end"]].median(), 3))
-            ##print(similarity)
             score = html.Td(round(similarities[i], 3))
             content = html.Td(dbc.Button(text, 
                                  id = dict(type = "highlight", index = i), 
@@ -520,55 +440,6 @@ def update_summary_display_dl(highlights, tokens, word_scores, window_size, quer
         summary_body = []
     return dbc.Table(summary_body, bordered = True)
 
-
-
-
-# @app.callback(
-#     Output("summary_body", "children"),
-#     Input("store_highlights", "data"),
-#     State("store_tokens", "data"),
-#     State("store_word_scores", "data"),
-#     State("window_size", "value"),
-#     State("query", "value"),
-# )
-# def update_summary_display(highlights, tokens, word_scores, window_size, query):
-#     if highlights and tokens and word_scores and window_size and query:
-#         window_size = int(window_size)
-#         ##print("update_summary_display", highlights[:5])
-#         highlights = json.loads(highlights)
-#         tokens = json.loads(tokens)
-#         windows = ["".join(tokens[i:i + window_size]) for i in range(0, len(tokens) - window_size + 1)]
-#         #model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]")
-#         #model = CountVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
-#         model = TfidfVectorizer(token_pattern = r"[a-zA-Z]+|[^a-zA-Z\s]", ngram_range = (1, 2))
-#         window_embeddings = model.fit_transform(windows)
-#         query_embedding = model.transform([query])
-#         summary_body = []
-#         for i, hl in enumerate(highlights):
-#             text = "".join(tokens[hl["start"]:hl["end"]])
-#             #score = html.Td(round(word_scores.avg_score[hl["start"]:hl["end"]].median(), 3))
-#             highlight_embedding = model.transform([text])
-#             similarity = cosine_similarity(query_embedding, highlight_embedding)[0][0]
-#             ##print(similarity)
-#             score = html.Td(round(similarity, 3))
-#             content = html.Td(dbc.Button(text, 
-#                                  id = dict(type = "highlight", index = i), 
-#                                  color = "link"))
-#             accept = dbc.Button(f"✔", 
-#                                 id = dict(type = "accept", index = i), 
-#                                 style = {"background":"seagreen"})
-#             reject = dbc.Button(f"✕", 
-#                                 id = dict(type = "reject", index = i), 
-#                                 style = {"background":"firebrick"})
-# 
-#             row = html.Tr([score, content, html.Td([accept, reject])], 
-#                            id = dict(type = "highlight_card", index = i))
-#             summary_body.append(row)
-#     else:
-#         summary_body = []
-#     return dbc.Table(summary_body, bordered = True)
-
-
 @app.callback(
     Output("document_modal_body", "children"),
     Input("store_tokens", "data"),
@@ -577,75 +448,33 @@ def update_summary_display_dl(highlights, tokens, word_scores, window_size, quer
 def update_document_modal(tokens, highlights):
     tokens = json.loads(tokens)
     highlights = json.loads(highlights)
-    #print("update_document_modal", len(highlights))
     output = lib.render_document(tokens, highlights)
     return output
 
 
 @app.callback(
     Output("store_word_scores", "data"),
-#    Output("histogram", "figure"),
-#    Output("lineplot", "figure"),
-#    Output("store_highlighted_words", "children"),
-#    Output("store_highlighted_lines", "children"),
     Input("submit", "n_clicks"),
     State("query", "value"),
     State("store_tokens", "data"),
     State("window_size", "value"),
 )
 def compute_word_scores(submit, query, tokens, window_size):
-#    highlights = []
-#    histogram = px.histogram()
-#    lineplot = px.scatter()
-#    words = 0
-#    lines = 0
     window_size = int(window_size)
     output = ""
     if query and tokens:
         tokens = json.loads(tokens)
         word_scores = lib.compute_scores_sentence_dl(tokens, query, window_size = window_size)
         output = word_scores.to_json()
-        #spans = lib.find_spans(scores.avg_score, threshold = threshold)
-        #highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
-    #     histogram = px.histogram(scores, "avg_score")
-    #     lineplot = px.line(scores, 
-    #                           y = "avg_score",
-    #                           #trendline = "rolling", 
-    #                           #trendline_options = dict(window = 256),
-    #                           #trendline_color_override = "red")
-    #      c                     )
-    #     lineplot.update_traces(marker={'size': 1})
-    #     words = sum([s[1] - s[0] if s[1] is not None else len(tokens) - s[0] for s in spans])
-    #     lines = len(spans)
-    # histogram.add_vline(x = threshold, annotation_text = "Threshold")
-    # histogram.update_layout(xaxis_title = "Word score", 
-    #                         yaxis_title = "Frequency", 
-    #                         title = "Distribution of the word scores",
-    #                         xaxis_range = (0, 1))
-    # lineplot.update_layout(xaxis_title = "Position in document", 
-    #                        yaxis_title = "Word score", 
-    #                        title = "Evolution of the word score in the paper",
-    #                        yaxis_range = (0, 1))
-    # lineplot.add_hline(y = threshold, annotation_text = "Threshold")
-    # for i, h in enumerate(highlights):
-    #     #print(i)
-    #     #print("".join(tokens[h["start"]:h["end"]]))
-    #return json.dumps(highlights)#, histogram, lineplot, words, lines
-#    #print("compute_word_scores", word_scores)
-#    return word_scores.to_json()#json.dumps(highlights)#, histogram, lineplot, words, lines
-    return output
-
+        return output
 
 @app.callback(
-    #Output("store_word_scores", "data"),
     Output("histogram", "figure"),
     Output("lineplot", "figure"),
     Input("threshold", "value"),
     Input("store_word_scores", "data"),
 )
 def update_plots(threshold, word_scores):
-    #highlights = json.loads(highlights)
-    ##print("update_plots", len(highlights))
     histogram = px.histogram()
     lineplot = px.scatter()
     words = 0
@@ -653,16 +482,9 @@ def update_plots(threshold, word_scores):
     threshold = float(threshold) 
     if word_scores:
         word_scores = pd.read_json(word_scores)
-        ##print(highlights[:5])
-#        spans = lib.find_spans(word_scores.avg_score, threshold = threshold)
-#        highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
         histogram = px.histogram(word_scores, "avg_score")
         lineplot = px.line(word_scores, 
-                              y = "avg_score",
-                              #trendline = "rolling", 
-                              #trendline_options = dict(window = 256),
-                              #trendline_color_override = "red")
-                              )
+                              y = "avg_score")
         lineplot.update_traces(marker={'size': 1})
         histogram.add_vline(x = threshold, annotation_text = "Threshold")
         histogram.update_layout(xaxis_title = "Word score", 
@@ -674,8 +496,7 @@ def update_plots(threshold, word_scores):
                                title = "Evolution of the word score in the paper",
                                yaxis_range = (0, 1))
         lineplot.add_hline(y = threshold, annotation_text = "Threshold")
-    return histogram, lineplot#, words, lines
-
+    return histogram, lineplot
 
 @app.callback(
     Output("highlighted_words_front", "children"),

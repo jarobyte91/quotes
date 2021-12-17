@@ -24,7 +24,6 @@ def render_document(t, h):
         content = []
         if len(h) > 0:
             content.extend(join("".join(t[:h[0]["start"]]).split("\n")))
-
             string = "".join(t[h[0]["start"]:h[0]["end"]])
             splitted = string.split("\n")
             splitted = [html.Strong(x, style = {"color":"red"}) for x in splitted]
@@ -85,8 +84,6 @@ def compute_scores_word_dl(tokens, query, window_size):
     windows = [tokens[i:i + window_size] for i in range(0, len(tokens) - window_size + 1)]
     windows_df = pd.DataFrame({"tokens":windows, "text":["".join(w) for w in windows]})
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    #model = SentenceTransformer('paraphrase-albert-small-v2')
-    #model = SentenceTransformer('average_word_embeddings_glove.6B.300d')
     query_embedding = model.encode([query])
     window_embeddings = model.encode(windows_df.text)
     similarities = cosine_similarity(query_embedding, window_embeddings)
@@ -101,41 +98,25 @@ def compute_scores_word_dl(tokens, query, window_size):
 
 
 def compute_scores_sentence_dl(tokens, query, window_size):
-    #print("compute_scores_sentence_dl")
-    #print("tokens", len(tokens))
     tokenizer = PunktSentenceTokenizer()
     word_lens = [len(t) for t in tokens]
     offsets = [0] + list(accumulate(word_lens))
     starts = offsets[:-1]
     ends = offsets[1:]
     tokens_extended = list(zip(tokens, starts, ends))
-    document = "".join(tokens)#.replace("\n", " ")
+    document = "".join(tokens)
     sentences = list(tokenizer.span_tokenize(document))
-    #for a, b in sentences[:10]:
-        #print(document[a:b])
-        #print("*" * 30)
     windows = [[t for t, a, b in tokens_extended if a >= current[0] and (b <= next[0] or next[1] == sentences[-1][1])] for current, next in zip(sentences[:-1], sentences[1:])]
-    #print("windows", sum([len(w) for w in windows]))
-    #print(["".join(w) for w in windows[:5]])
     windows_df = pd.DataFrame({"tokens":windows, "text":["".join(w) for w in windows]})
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    #model = SentenceTransformer('paraphrase-albert-small-v2')
-    #model = SentenceTransformer('average_word_embeddings_glove.6B.300d')
     query_embedding = model.encode([query])
     window_embeddings = model.encode(windows_df.text)
     similarities = cosine_similarity(query_embedding, window_embeddings)
     windows_df = windows_df.assign(similarity = similarities.flatten().tolist())
-    #print(windows_df.head())
     scores = windows_df.explode("tokens")\
     .reset_index(drop = True)\
     .reset_index()\
     .drop(columns = "text")\
     .rename(columns = {"index":"position", "tokens":"token", "similarity":"avg_score"})
-    #print(scores.query("avg_score > 0.5").head(20))
-    #print(scores.shape)
-    #print("last tokens", tokens[-5:])
-    # for a, b in sentences[-5:]:
-    #     print(a, b)
-    #     print(document[a:b])
     return scores
 
