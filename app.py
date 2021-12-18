@@ -28,27 +28,36 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = 
 
 query_test = """In this paper, we propose a novel neural network model called RNN Encoder-Decoder that consists of two recurrent neural networks (RNN). One RNN encodes a sequence of symbols into a fixed-length vector representation, and the other decodes the representation into another sequence of symbols. The encoder and decoder of the proposed model are jointly trained to maximize the conditional probability of a target sequence given a source sequence. The performance of a statistical machine translation system is empirically found to improve by using the conditional probabilities of phrase pairs computed by the RNN Encoder-Decoder as an additional feature in the existing log-linear model. Qualitatively, we show that the proposed model learns a semantically and syntactically meaningful representation of linguistic phrases."""
 query = dbc.Card([html.H2("Query"), 
-                  dbc.Card(dcc.Textarea(rows = 9, id = "query", value = query_test, style = {"font-size":"12px"}))], 
-                  #dbc.Card(dcc.Textarea(rows = 9, id = "query", style = {"font-size":"12px"}))], 
+                  dbc.Card(dcc.Textarea(rows = 9, id = "query", 
+                                        value = query_test, 
+                                        style = {"font-size":"12px"}))], 
                  body = True)
 view_document = dbc.Card(dbc.Button("View document", id = "view_document"))
 upload = dbc.Card(dbc.Button(dcc.Upload('Upload paper', id = "upload")))
 buttons = dbc.Row([dbc.Col(upload), dbc.Col(view_document)])
 threshold = dbc.Card([html.H3("Threshold")])
-row1 = html.Tr([html.Td(html.Strong("Window size:")), html.Td(id = "window_size_front", style = {"text-align":"right"})])
-row2 = html.Tr([html.Td(html.Strong("Threshold:")), html.Td(id = "threshold_front", style = {"text-align":"right"})])
+row1 = html.Tr([html.Td(html.Strong("Window size:")), 
+                html.Td(id = "window_size_front", 
+                        style = {"text-align":"right"})])
+row2 = html.Tr([html.Td(html.Strong("Threshold:")),
+                html.Td(id = "threshold_front", 
+                        style = {"text-align":"right"})])
 parameters_body = [row1, row2]
 parameters = html.Table(parameters_body)
-settings_adjust = dbc.Card(dbc.Button("Adjust settings", id = "settings_adjust"))
+settings_adjust = dbc.Card(dbc.Button("Adjust settings", 
+                                      id = "settings_adjust"))
 settings_panel = dbc.Card([html.H2("Settings"), parameters], body = True)
-controls = dbc.Col([query, buttons, settings_panel, settings_adjust], width = 4)
+controls = dbc.Col([query, buttons, settings_panel, settings_adjust], 
+                   width = 4)
 
 ###################################
 # Summary
 ###################################
 
-highlighted_words_front = html.Td(0, id = "highlighted_words_front", style = {"text-align":"right"})
-highlighted_lines_front = html.Td(0, id = "highlighted_lines_front", style = {"text-align":"right"})
+highlighted_words_front = html.Td(0, id = "highlighted_words_front", 
+                                  style = {"text-align":"right"})
+highlighted_lines_front = html.Td(0, id = "highlighted_lines_front", 
+                                  style = {"text-align":"right"})
 row1 = html.Tr([html.Td(html.Strong("Highlighted words: ")), 
                 highlighted_words_front])
 row2 = html.Tr([html.Td(html.Strong("Highlights: ")), 
@@ -59,7 +68,8 @@ row3 = html.Tr([html.Td(html.Strong("Reviewed: ")),
                         style = {"text-align":"right"})])
 counts_body = [row1, row2, row3]
 counts = dbc.Card(html.Table(counts_body), body = True)
-summary_title = dbc.CardGroup([dbc.Card(html.H2("Highlights"), body = True), counts])
+summary_title = dbc.CardGroup([dbc.Card(html.H2("Highlights"), body = True), 
+                               counts])
 view_summary = dbc.Button(
     "View summary",
     id="view_summary",
@@ -69,7 +79,9 @@ summary_body = dbc.Card(id = "summary_body",
                         style = {"height":"330px", 
                                  "overflow-y":"scroll", 
                                  "background-color":"lightgrey"})
-summary_display = dbc.Col([summary_title, summary_body, dbc.Card(view_summary)])
+summary_display = dbc.Col([summary_title, 
+                           summary_body, 
+                           dbc.Card(view_summary)])
 
 ####################################
 # View document
@@ -85,7 +97,8 @@ document_modal = dbc.Modal(
     [
         dbc.ModalHeader(html.H1("Uploaded document")),
         dbc.ModalBody([dbc.Card(id = "document_modal_body", 
-                                style = {"height":"400px", "overflow-y":"scroll"})]),
+                                style = {"height":"400px", 
+                                         "overflow-y":"scroll"})]),
         dbc.ModalFooter(close_document)
     ],
     id = "document_modal",
@@ -139,12 +152,18 @@ threshold_row = [html.Td(html.Strong("Threshold:")),
                  html.Td(dcc.Input(value = 0.5, 
                          style = {"text-align":"right"}, 
                          id = "threshold"), )]
-highlighted_words_modal = html.Td(0, id = "highlighted_words_modal", style = {"text-align":"right"})
-highlighted_lines_modal = html.Td(0, id = "highlighted_lines_modal", style = {"text-align":"right"})
-highlighted_words_row = [html.Td(html.Strong("Highlighted words:")), highlighted_words_modal]
-highlighted_lines_row = [html.Td(html.Strong("Highlights:")), highlighted_lines_modal]
-parameters = dbc.Card(html.Table([html.Tr(window_size_row + highlighted_words_row),
-                                  html.Tr(threshold_row + highlighted_lines_row)]))
+highlighted_words_modal = html.Td(0, id = "highlighted_words_modal", 
+                                  style = {"text-align":"right"})
+highlighted_lines_modal = html.Td(0, id = "highlighted_lines_modal", 
+                                  style = {"text-align":"right"})
+highlighted_words_row = [html.Td(html.Strong("Highlighted words:")), 
+                         highlighted_words_modal]
+highlighted_lines_row = [html.Td(html.Strong("Highlights:")), 
+                         highlighted_lines_modal]
+parameters = dbc.Card(html.Table([html.Tr(window_size_row + \
+                                          highlighted_words_row),
+                                  html.Tr(threshold_row + \
+                                          highlighted_lines_row)]))
 settings = html.Div([parameters, dbc.Row([histogram, lineplot])])
 settings_close = dbc.Button("Close", id = "settings_close")
 submit = dbc.Card(dbc.Button("Compute word scores", id = "submit"))
@@ -172,8 +191,10 @@ store_summary = dcc.Store(id = "store_summary")
 store_document= dcc.Store(id = "store_document")
 
 store_scroll= html.P(0, id = "store_scroll", hidden = True)
-store_highlighted_words = html.P(0, id = "store_highlighted_words", hidden = True)
-store_highlighted_lines = html.P(0, id = "store_highlighted_lines", hidden = True)
+store_highlighted_words = html.P(0, id = "store_highlighted_words", 
+                                 hidden = True)
+store_highlighted_lines = html.P(0, id = "store_highlighted_lines", 
+                                 hidden = True)
 download = dcc.Download(id = "download")
 
 app.layout = dbc.Container(
@@ -302,7 +323,8 @@ def update_highlights(*args):
         word_scores = pd.read_json(word_scores)
         threshold = float(threshold)
         spans = lib.find_spans(word_scores.avg_score, threshold = threshold)
-        highlights = [dict(start = s, end = e, accepted = None) for s, e in spans]
+        highlights = [dict(start = s, end = e, accepted = None) 
+                      for s, e in spans]
     else:
         highlights = []
     ctx = dash.callback_context
@@ -322,7 +344,8 @@ def update_highlights(*args):
                 highlights[index]["accepted"] = False 
             else:
                 highlights[index]["accepted"] = None 
-            reviews = len([h for h in highlights if h["accepted"] is not None])
+            reviews = len([h for h in highlights 
+                           if h["accepted"] is not None])
     return json.dumps(highlights), reviews
 
 @app.callback(
@@ -357,7 +380,8 @@ def retrieve_summary(is_open, highlights, tokens):
     if highlights and tokens: 
         highlights = json.loads(highlights)
         tokens = json.loads(tokens)
-        lines = ["".join(tokens[h["start"]:h["end"]]) for h in highlights if h["accepted"]]
+        lines = ["".join(tokens[h["start"]:h["end"]]) 
+                 for h in highlights if h["accepted"]]
         text = ("\n" + "-" * 30 + "\n").join(lines)
         body = lib.join(text.split("\n"))
     else:
@@ -407,16 +431,20 @@ def upload_document(contents):
     State("window_size", "value"),
     State("query", "value"),
 )
-def update_summary_display_dl(highlights, tokens, word_scores, window_size, query):
+def update_summary_display_dl(highlights, tokens, word_scores, window_size, 
+                              query):
     if highlights and tokens and word_scores and window_size and query:
         highlights = json.loads(highlights)
         tokens = json.loads(tokens)
         model = SentenceTransformer('all-MiniLM-L6-v2')
         query_embedding = model.encode([query])
-        highlight_text = ["".join(tokens[hl["start"]:hl["end"]]) for hl in highlights]
+        highlight_text = ["".join(tokens[hl["start"]:hl["end"]]) 
+                          for hl in highlights]
         if len(highlight_text) > 0:
             highlight_embeddings = model.encode(highlight_text)
-            similarities = cosine_similarity(query_embedding, highlight_embeddings).flatten().tolist()
+            similarities = cosine_similarity(query_embedding, 
+                                             highlight_embeddings)\
+                .flatten().tolist()
         else:
             similarities = []
         summary_body = []
@@ -464,7 +492,8 @@ def compute_word_scores(submit, query, tokens, window_size):
     output = ""
     if query and tokens:
         tokens = json.loads(tokens)
-        word_scores = lib.compute_scores_sentence_dl(tokens, query, window_size = window_size)
+        word_scores = lib.compute_scores_sentence_dl(tokens, query, 
+                                                     window_size = window_size)
         output = word_scores.to_json()
         return output
 
