@@ -2,22 +2,22 @@ import dash
 from dash import dcc
 import dash_bootstrap_components as dbc
 from dash import html
-from dash.dependencies import Input, Output, State, ClientsideFunction, ALL
-import plotly.express as px
 import pandas as pd
 import pdftotext as pt
-from flask import Flask, send_file, send_from_directory, redirect
+from flask import Flask
 from io import BytesIO
 import visdcc
 import re
 import json
-from dash_extensions import Download
-from dash_extensions.snippets import send_file
 import base64
 import lib
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
+# from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+# from sklearn.metrics.pairwise import cosine_similarity
 from sentence_transformers import SentenceTransformer
+from nltk.tokenize import PunktSentenceTokenizer
+import numpy as np
+from dash.dependencies import Input, Output, State, ALL
+import plotly.express as px
 
 server = Flask(__name__)
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = server)
@@ -28,13 +28,22 @@ app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = 
 
 query_test = """In this paper, we propose a novel neural network model called RNN Encoder-Decoder that consists of two recurrent neural networks (RNN). One RNN encodes a sequence of symbols into a fixed-length vector representation, and the other decodes the representation into another sequence of symbols. The encoder and decoder of the proposed model are jointly trained to maximize the conditional probability of a target sequence given a source sequence. The performance of a statistical machine translation system is empirically found to improve by using the conditional probabilities of phrase pairs computed by the RNN Encoder-Decoder as an additional feature in the existing log-linear model. Qualitatively, we show that the proposed model learns a semantically and syntactically meaningful representation of linguistic phrases."""
 query = dbc.Card([html.H2("Query"), 
-                  dbc.Card(dcc.Textarea(rows = 9, id = "query", 
-                                        value = query_test, 
-                                        style = {"font-size":"12px"}))], 
+                  dcc.Textarea(id = "query", value = query_test, rows = 8)], 
                  body = True)
 view_document = dbc.Card(dbc.Button("View document", id = "view_document"))
 upload = dbc.Card(dbc.Button(dcc.Upload('Upload paper', id = "upload")))
-buttons = dbc.Row([dbc.Col(upload), dbc.Col(view_document)])
+settings_adjust = dbc.Card(dbc.Button("Adjust settings", id = "settings_adjust"))
+view_summary = dbc.Card(dbc.Button("View summary", id="view_summary"))
+buttons = dbc.Card([dbc.CardGroup([upload, view_document]), dbc.CardGroup([settings_adjust, view_summary])])
+highlighted_words_front = html.Td(0, id = "highlighted_words_front", 
+                                  style = {"text-align":"right"})
+highlighted_lines_front = html.Td(0, id = "highlighted_lines_front", 
+                                  style = {"text-align":"right"})
+
+
+# summary_title = dbc.CardGroup([dbc.Card(html.H2("Highlights"), body = True), 
+#                                counts])
+
 threshold = dbc.Card([html.H3("Threshold")])
 row1 = html.Tr([html.Td(html.Strong("Window size:")), 
                 html.Td(id = "window_size_front", 
@@ -42,46 +51,28 @@ row1 = html.Tr([html.Td(html.Strong("Window size:")),
 row2 = html.Tr([html.Td(html.Strong("Threshold:")),
                 html.Td(id = "threshold_front", 
                         style = {"text-align":"right"})])
-parameters_body = [row1, row2]
+row3 = html.Tr([html.Td(html.Strong("Highlighted words: ")), 
+                highlighted_words_front])
+row4 = html.Tr([html.Td(html.Strong("Highlights: ")), 
+                highlighted_lines_front])
+row5 = html.Tr([html.Td(html.Strong("Reviewed: ")), 
+                html.Td(0, 
+                        id = "reviews", 
+                        style = {"text-align":"right"})])
+parameters_body = [row1, row2, row3, row4, row5]
 parameters = html.Table(parameters_body)
-settings_adjust = dbc.Card(dbc.Button("Adjust settings", 
-                                      id = "settings_adjust"))
+
+
 settings_panel = dbc.Card([html.H2("Settings"), parameters], body = True)
-controls = dbc.Col([query, buttons, settings_panel, settings_adjust], 
-                   width = 4)
+controls = dbc.Row([dbc.Col(query, width = 8), dbc.Col([settings_panel, buttons])])
 
 ###################################
 # Summary
 ###################################
 
-highlighted_words_front = html.Td(0, id = "highlighted_words_front", 
-                                  style = {"text-align":"right"})
-highlighted_lines_front = html.Td(0, id = "highlighted_lines_front", 
-                                  style = {"text-align":"right"})
-row1 = html.Tr([html.Td(html.Strong("Highlighted words: ")), 
-                highlighted_words_front])
-row2 = html.Tr([html.Td(html.Strong("Highlights: ")), 
-                highlighted_lines_front])
-row3 = html.Tr([html.Td(html.Strong("Reviewed: ")), 
-                html.Td(0, 
-                        id = "reviews", 
-                        style = {"text-align":"right"})])
-counts_body = [row1, row2, row3]
-counts = dbc.Card(html.Table(counts_body), body = True)
-summary_title = dbc.CardGroup([dbc.Card(html.H2("Highlights"), body = True), 
-                               counts])
-view_summary = dbc.Button(
-    "View summary",
-    id="view_summary",
-    n_clicks=0,
-)
-summary_body = dbc.Card(id = "summary_body",
-                        style = {"height":"330px", 
-                                 "overflow-y":"scroll", 
-                                 "background-color":"lightgrey"})
-summary_display = dbc.Col([summary_title, 
-                           summary_body, 
-                           dbc.Card(view_summary)])
+
+summary_body = dbc.Card(id = "summary_body")
+summary_display = summary_body
 
 ####################################
 # View document
@@ -128,7 +119,7 @@ download_summary = dbc.Button(
 summary_modal = dbc.Modal(
     [
         dbc.ModalHeader(html.H1("Your summary")),
-        dbc.ModalBody(id = "summary_modal_body"),
+        dbc.ModalBody(id = "history_body"),
         dbc.ModalFooter(dbc.Container([download_summary, close_summary]))
     ],
     id="summary_modal",
@@ -141,6 +132,7 @@ summary_modal = dbc.Modal(
 ##################################
 # Settings modal
 ##################################
+
 histogram = dbc.Col(dcc.Graph(id = "histogram"))
 lineplot = dbc.Col(dcc.Graph(id = "lineplot"))
 window_size_row = [html.Td(html.Strong("Window size:")), 
@@ -184,11 +176,14 @@ settings_modal = dbc.Modal(
 # App Layout
 ##################################
 
-store_tokens = dcc.Store(id = "store_tokens")
-store_word_scores = dcc.Store(id = "store_word_scores")
-store_highlights = dcc.Store(id = "store_highlights")
-store_summary = dcc.Store(id = "store_summary")
-store_document= dcc.Store(id = "store_document")
+store_sentences = dcc.Store(id = "store_sentences")
+store_sentence_embeddings = dcc.Store(id = "store_sentence_embeddings")
+store_query_embedding= dcc.Store(id = "store_query_embedding")
+history = pd.DataFrame(columns = ["sentence", "text", "relevance"]).to_json()
+store_history = dcc.Store(data = history, 
+                          id = "store_history")
+store_recommendations = dcc.Store(id = "store_recommendations")
+
 
 store_scroll= html.P(0, id = "store_scroll", hidden = True)
 store_highlighted_words = html.P(0, id = "store_highlighted_words", 
@@ -201,15 +196,16 @@ app.layout = dbc.Container(
     [
         html.H1("Query-focused Extractive Summarization"),
         html.Hr(),
-        dbc.Row([controls, summary_display]),
+        controls, 
+        summary_display,
         document_modal,
         summary_modal,
         settings_modal,
-        store_tokens,
-        store_word_scores,
-        store_highlights,
-        store_summary,
-        store_document,
+        store_sentences,
+        store_sentence_embeddings,
+        store_query_embedding,
+        store_history,
+        store_recommendations,
         store_scroll,
         store_highlighted_words,
         store_highlighted_lines,
@@ -221,22 +217,6 @@ app.layout = dbc.Container(
 ###################################
 # Callbacks
 ###################################
-
-
-@app.callback(
-    Output("document_modal", "is_open"),
-    [
-        Input("view_document", "n_clicks"),
-        Input("close_document", "n_clicks"),
-        Input("store_scroll", "children")
-    ],
-    [State("document_modal", "is_open")],
-)
-def toggle_modal_document(open_view, close_view, scroll, is_open):
-    if open_view or close_view or scroll:
-        return not is_open
-    else:
-        return is_open
 
 
 @app.callback(
@@ -252,6 +232,7 @@ def toggle_modal_summary(open_view, close_view, is_open):
         return not is_open
     else:
         return is_open
+
 
 @app.callback(
     Output("settings_modal", "is_open"),
@@ -272,273 +253,290 @@ def toggle_settings_modal(open_settings, close_settings, is_open):
     Output('javascript', 'run'),
     Input("document_modal", "is_open"),
     State("store_scroll", "children"),
-    State("store_tokens", "data")
+    State("store_sentences", "data"),
+    prevent_initial_call = True
 )
-def scroll_document(is_open, scroll_position, tokens):
-    tokens = json.loads(tokens)
-    if scroll_position is not None and len(tokens) > 0:
-        position = int(scroll_position) / len(tokens)
-        output = f"""var obj = document.getElementById('document_modal_body');
+def scroll_document(is_open, store_scroll, sentences):
+    if is_open and sentences and store_scroll:
+        sentences = json.loads(sentences)
+        position = (int(store_scroll) + 5) / len(sentences)
+        javascript = f"""var obj = document.getElementById('document_modal_body');
         var line = {position} * obj.scrollHeight;
         obj.scrollTop = line"""
     else:
-        output = ""
-    return output 
+        javascript = ""
+    return javascript 
 
 
 @app.callback(
     Output("store_scroll", "children"),
-    Input({"type":"highlight", "index":ALL}, "n_clicks"),
-    State("store_highlights", "data")
+    Input({"type":"recommendation", "index":ALL}, "n_clicks"),
+    Input({"type":"history", "index":ALL}, "n_clicks"),
+    State("store_scroll", "children"),
+    State("store_recommendations", "data"),
+    State("store_history", "data"),
+    prevent_initial_call = True
 )
-def click_highlight(*args):
+def update_scroll(*args):
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"]
     value = ctx.triggered[0]["value"]
-    if value is None:
-        start = 0
-    else:
+    store_scroll = args[-3]
+    position = store_scroll
+    if value:
+        recommendations = pd.read_json(args[-2])
+        history = pd.read_json(args[-1])
         index_type, attribute = prop_id.split(".")
         index_type = json.loads(index_type)
         index = index_type["index"]
         type = index_type["type"]
-        highlights = json.loads(args[-1])
-        start = highlights[index]["start"]
-    return start 
-
-
-@app.callback(
-    Output("store_highlights", "data"),
-    Output("reviews", "children"),
-    Input({"type":"accept", "index":ALL}, "n_clicks"),
-    Input({"type":"reject", "index":ALL}, "n_clicks"),
-    Input("store_word_scores", "data"),
-    Input("threshold", "value"),
-    State("store_highlights", "data"),
-)
-def update_highlights(*args):
-    word_scores = args[-3]
-    threshold = args[-2]
-    if word_scores:
-        word_scores = pd.read_json(word_scores)
-        threshold = float(threshold)
-        spans = lib.find_spans(word_scores.avg_score, threshold = threshold)
-        highlights = [dict(start = s, end = e, accepted = None) 
-                      for s, e in spans]
-    else:
-        highlights = []
-    ctx = dash.callback_context
-    prop_id = ctx.triggered[0]["prop_id"]
-    value = ctx.triggered[0]["value"]
-    reviews = 0              # 
-    if prop_id not in ["store_word_scores.data", "threshold.value"]:
-        index_type, attribute = prop_id.split(".")
-        index_type = json.loads(index_type)
-        index = index_type["index"]
-        type = index_type["type"]
-        if value is not None:
-            highlights = json.loads(args[-1])
-            if type == "accept":
-                highlights[index]["accepted"] = True 
-            elif type == "reject":
-                highlights[index]["accepted"] = False 
-            else:
-                highlights[index]["accepted"] = None 
-            reviews = len([h for h in highlights 
-                           if h["accepted"] is not None])
-    return json.dumps(highlights), reviews
-
-@app.callback(
-    Output({"type":"highlight_card", "index":ALL}, "style"),
-    Input("summary_body", "children"),
-    State("store_highlights", "data"),
-)
-def update_highlights_color(children, data):
-    if data is not None:
-        status = json.loads(data)
-    else:
-        status = []
-    output = []
-    for h in status:
-        if h["accepted"] is None:
-            output.append({"background-color":"white"})
-        elif h["accepted"]:
-            output.append({"background-color":"lightgreen"})
+        if type == "recommendation":
+            position = recommendations.iloc[index, 0]
         else:
-            output.append({"background-color":"lightpink"})
-    return output 
+            position = history.iloc[index, 0]
+        return position
 
 
 @app.callback(
-    Output("summary_modal_body", "children"),
-    Output("store_summary", "data"),
-    Input("view_summary", "n_clicks"),
-    State("store_highlights", "data"),
-    State("store_tokens", "data")
+    Output("document_modal", "is_open"),
+    Input("view_document", "n_clicks"),
+    Input("close_document", "n_clicks"),
+    Input("store_scroll", "children"),
+    State("document_modal", "is_open"),
+    prevent_initial_call = True
 )
-def retrieve_summary(is_open, highlights, tokens):
-    if highlights and tokens: 
-        highlights = json.loads(highlights)
-        tokens = json.loads(tokens)
-        lines = ["".join(tokens[h["start"]:h["end"]]) 
-                 for h in highlights if h["accepted"]]
-        text = ("\n" + "-" * 30 + "\n").join(lines)
-        body = lib.join(text.split("\n"))
-    else:
-        text = ""
-        body = []
-    return body, json.dumps(text) 
-
+def toggle_modal_document(view_document, close_document, store_scroll, is_open):
+    ctx = dash.callback_context
+    value = ctx.triggered[0]["value"]
+    if value:
+        return not is_open
+    
 
 @app.callback(
     Output("download", "data"),
     Input("download_summary", "n_clicks"),
-    State("store_summary", "data"),
+    State("store_history", "data"),
     prevent_initial_call = True
 )
-def download(n_clicks, summary):
-    if summary:
-        output = json.loads(summary)
+def download(n_clicks, history):
+    if history:
+        output = "\n\n".join(pd.read_json(history).query("relevance == True").text)
     else:
         output = ""
     return dict(content = output, filename = "summary.txt") 
 
 
 @app.callback(
-    Output("store_document", "data"),
-    Output("store_tokens", "data"),
+    Output("store_sentences", "data"),
+    Output("store_sentence_embeddings", "data"),
+    Output("store_query_embedding", "data"),
     Input("upload", "contents"),
+    State("query", "value")
 )
-def upload_document(contents):
+def upload_document(contents, query):
     if contents:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
         file = BytesIO(decoded)
         pdf = pt.PDF(file, raw = True)
-        document = "".join(pdf)
-        tokens = re.findall(r"[a-zA-Z]+|[^a-zA-Z]", document)
+        document = "".join(pdf).replace("-\n", "").replace("\n", " ")
+        tokenizer = PunktSentenceTokenizer(document)
+        sentences = tokenizer.tokenize(document)
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        sentence_embeddings = model.encode(sentences).tolist()
+        query_embedding = model.encode([query]).tolist()
     else:
-        document = None
-        tokens = []
-    return json.dumps(document), json.dumps(tokens)
+        sentences = []
+        sentence_embeddings = []
+        query_embedding = []
+    return json.dumps(sentences), json.dumps(sentence_embeddings), json.dumps(query_embedding) 
 
 
 @app.callback(
     Output("summary_body", "children"),
-    Input("store_highlights", "data"),
-    State("store_tokens", "data"),
-    State("store_word_scores", "data"),
-    State("window_size", "value"),
-    State("query", "value"),
+    Input("store_recommendations", "data"),
+    prevent_initial_call = True
 )
-def update_summary_display_dl(highlights, tokens, word_scores, window_size, 
-                              query):
-    if highlights and tokens and word_scores and window_size and query:
-        highlights = json.loads(highlights)
-        tokens = json.loads(tokens)
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        query_embedding = model.encode([query])
-        highlight_text = ["".join(tokens[hl["start"]:hl["end"]]) 
-                          for hl in highlights]
-        if len(highlight_text) > 0:
-            highlight_embeddings = model.encode(highlight_text)
-            similarities = cosine_similarity(query_embedding, 
-                                             highlight_embeddings)\
-                .flatten().tolist()
-        else:
-            similarities = []
+def update_recommendations_body(recommendations):
+    if recommendations:
+        recommendations = pd.read_json(recommendations).head().to_dict("records")
         summary_body = []
-        for i, hl in enumerate(highlights):
-            text = "".join(tokens[hl["start"]:hl["end"]])
-            score = html.Td(round(similarities[i], 3))
-            content = html.Td(dbc.Button(text, 
-                                 id = dict(type = "highlight", index = i), 
-                                 color = "link"))
-            accept = dbc.Button(f"✔", 
-                                id = dict(type = "accept", index = i), 
+        header = html.Tr([html.Th("Estimated Relevance", style = {"text-align":"center"}),
+                          html.Th("Sentence", style = {"text-align":"center"}),
+                          html.Th("Text", style = {"text-align":"center"}),
+                          html.Th("Relevant?", colSpan = 2, style = {"text-align":"center"})])
+        summary_body.append(header)
+        for i, r in enumerate(recommendations):
+            score = html.Td(round(r["score"], 3))
+            sentence = html.Td(r["sentence"])
+            content = html.Td(dbc.Button(r["text"], 
+                                  id = dict(type = "recommendation", index = i), 
+                                  color = "link"))
+            accept = dbc.Button("✔", 
+                                id = dict(type = "recommendation_accept", 
+                                          index = i), 
                                 style = {"background":"seagreen"})
-            reject = dbc.Button(f"✕", 
-                                id = dict(type = "reject", index = i), 
+            reject = dbc.Button("✕", 
+                                id = dict(type = "recommendation_reject", 
+                                          index = i), 
                                 style = {"background":"firebrick"})
 
-            row = html.Tr([score, content, html.Td([accept, reject])], 
-                           id = dict(type = "highlight_card", index = i))
+            row = html.Tr([score, sentence, content, html.Td(accept), html.Td(reject)], 
+                          id = dict(type = "recommendation_card", index = i), 
+                          style = {"background":"white"})
             summary_body.append(row)
     else:
         summary_body = []
     return dbc.Table(summary_body, bordered = True)
 
+
+@app.callback(
+    Output("history_body", "children"),
+    Input("store_history", "data"),
+    prevent_initial_call = True
+)
+def update_history_body(history):
+    history = pd.read_json(history).to_dict("records")
+    history_body = []
+    for i, r in enumerate(history):
+        sentence = html.Td(r["sentence"])
+        content = html.Td(dbc.Button(r["text"], 
+                              id = dict(type = "history", index = i), 
+                              color = "link"))
+        accept = dbc.Button("✔", 
+                            id = dict(type = "history_accept", index = i), 
+                            style = {"background":"seagreen"})
+        reject = dbc.Button("✕", 
+                            id = dict(type = "history_reject", index = i), 
+                            style = {"background":"firebrick"})
+        card_style = {"background":"lightgreen"} if r["relevance"] else {"background":"lightpink"} 
+        row = html.Tr([sentence, content, html.Td(accept), html.Td(reject)], 
+                      id = dict(type = "history_card", index = i), 
+                      style = card_style)
+        history_body.append(row)
+    return  dbc.Table(history_body, bordered = True)
+
+
+@app.callback(
+    Output("store_history", "data"),
+    Input({"type":"recommendation_accept", "index":ALL}, "n_clicks"),
+    Input({"type":"recommendation_reject", "index":ALL}, "n_clicks"),
+    Input({"type":"history_accept", "index":ALL}, "n_clicks"),
+    Input({"type":"history_reject", "index":ALL}, "n_clicks"),
+    State("store_history", "data"),
+    State("store_recommendations", "data"),
+    prevent_initial_call = True
+)
+def update_history(*args):
+    ctx = dash.callback_context
+    prop_id = ctx.triggered[0]["prop_id"]
+    value = ctx.triggered[0]["value"]
+    index_type, attribute = prop_id.split(".")
+    index_type = json.loads(index_type)
+    index = index_type["index"]
+    type = index_type["type"]
+    subtype, accept = type.split("_")
+    history = pd.read_json(args[-2])
+    recommendations = args[-1]
+    if value and recommendations:
+        recommendations = pd.read_json(recommendations).to_dict("records")
+        if subtype == "recommendation":
+            r = recommendations[index]
+            new = dict(sentence = r["sentence"], 
+                        text = r["text"], 
+                        relevance = True if accept == "accept" else False)
+            history = history.append(pd.Series(new), ignore_index = True)
+        else:
+            history.iloc[index, -1] = True if accept == "accept" else False
+    return history.sort_values(["relevance", "sentence"], ascending = [0, 1]).to_json()
+
+
 @app.callback(
     Output("document_modal_body", "children"),
-    Input("store_tokens", "data"),
-    Input("store_highlights", "data"),
+    Input("store_sentences", "data"),
+    Input("store_history", "data"),
+    Input("store_scroll", "children"),
+    prevent_initial_call = True
 )
-def update_document_modal(tokens, highlights):
-    tokens = json.loads(tokens)
-    highlights = json.loads(highlights)
-    output = lib.render_document(tokens, highlights)
+def update_document_modal(sentences, history, scroll):
+    sentences = json.loads(sentences)
+    history = pd.read_json(history)
+    output = lib.render_document(sentences, history, scroll)
     return output
 
 
 @app.callback(
-    Output("store_word_scores", "data"),
-    Input("submit", "n_clicks"),
-    State("query", "value"),
-    State("store_tokens", "data"),
-    State("window_size", "value"),
+    Output("store_recommendations", "data"),
+    Input("store_sentences", "data"),
+    Input("store_history", "data"),
+    State("store_sentence_embeddings", "data"),
+    State("store_query_embedding", "data"),
+    prevent_initial_call = True,
 )
-def compute_word_scores(submit, query, tokens, window_size):
-    window_size = int(window_size)
-    output = ""
-    if query and tokens:
-        tokens = json.loads(tokens)
-        word_scores = lib.compute_scores_sentence_dl(tokens, query, 
-                                                     window_size = window_size)
-        output = word_scores.to_json()
-        return output
+def update_recommendations(sentences, history, sentence_embeddings, query_embedding):
+    sentences = json.loads(sentences)
+    sentence_embeddings = np.array(json.loads(sentence_embeddings))
+    query_embedding = np.array(json.loads(query_embedding))
+    history = pd.read_json(history)
+    if len(sentences) > 0:
+        recommendations = lib.compute_scores_dl(sentences, history, sentence_embeddings, query_embedding)
+        recommendations = recommendations.sort_values("score", 
+                                                      ascending = False)
+    else:
+        recommendations = pd.DataFrame()
+    return recommendations.to_json()
+
 
 @app.callback(
     Output("histogram", "figure"),
     Output("lineplot", "figure"),
     Input("threshold", "value"),
-    Input("store_word_scores", "data"),
+    Input("store_recommendations", "data"),
+    Input("store_history", "data"),
 )
-def update_plots(threshold, word_scores):
+def update_plots(threshold, recommendations, history):
     histogram = px.histogram()
     lineplot = px.scatter()
-    words = 0
-    lines = 0
     threshold = float(threshold) 
-    if word_scores:
-        word_scores = pd.read_json(word_scores)
-        histogram = px.histogram(word_scores, "avg_score")
-        lineplot = px.line(word_scores, 
-                              y = "avg_score")
+    if recommendations and history:
+        recommendations = pd.read_json(recommendations)
+        history = pd.read_json(history)\
+            .assign(score = lambda df: df.relevance.map(float))
+        data = pd.concat((recommendations, history), axis = 0)\
+            .reset_index(drop = True)\
+            .sort_values("sentence")
+        histogram = px.histogram(data, "score")
+        lineplot = px.line(data, x = "sentence", y = "score")
         lineplot.update_traces(marker={'size': 1})
         histogram.add_vline(x = threshold, annotation_text = "Threshold")
-        histogram.update_layout(xaxis_title = "Word score", 
+        histogram.update_layout(xaxis_title = "Sentence score", 
                                 yaxis_title = "Frequency", 
-                                title = "Distribution of the word scores",
-                                xaxis_range = (0, 1))
+                                title = "Distribution of the sentence scores",
+                                xaxis_range = (-0.1, 1.1))
         lineplot.update_layout(xaxis_title = "Position in document", 
-                               yaxis_title = "Word score", 
-                               title = "Evolution of the word score in the paper",
-                               yaxis_range = (0, 1))
+                                yaxis_title = "Sentence score", 
+                                title = "Evolution of the sentence score in the paper",
+                                yaxis_range = (-0.1, 1.1))
         lineplot.add_hline(y = threshold, annotation_text = "Threshold")
     return histogram, lineplot
+
 
 @app.callback(
     Output("highlighted_words_front", "children"),
     Output("highlighted_lines_front", "children"),
     Output("highlighted_words_modal", "children"),
     Output("highlighted_lines_modal", "children"),
-    Input("store_highlights", "data"),
+    Output("reviews", "children"),
+    Input("store_history", "data"),
 )
-def update_highlighted(highlights):
-    highlights = json.loads(highlights)
-    words = sum([h["end"] - h["start"] for h in highlights])
-    lines = len(highlights)
-    return f"{words:,}", f"{lines:,}", f"{words:,}", f"{lines:,}" 
+def update_highlighted(history):
+    history = pd.read_json(history)
+    relevant = history.query("relevance == True")
+    words = len(re.findall(r"\w+", 
+                           " ".join(relevant.text)))
+    lines = relevant.shape[0]
+    reviews = history.shape[0]
+    return f"{words:,}", f"{lines:,}", f"{words:,}", f"{lines:,}", f"{reviews:,}" 
 
 
 @app.callback(
