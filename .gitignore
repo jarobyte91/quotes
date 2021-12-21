@@ -2,3 +2,4 @@
 *.ipynb_checkpoints*
 *swp*
 cache
+sbert_cache

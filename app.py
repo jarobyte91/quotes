@@ -350,9 +350,9 @@ def upload_document(contents, query):
         document = "".join(pdf).replace("-\n", "").replace("\n", " ")
         tokenizer = PunktSentenceTokenizer(document)
         sentences = tokenizer.tokenize(document)
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        sentence_embeddings = model.encode(sentences).tolist()
-        query_embedding = model.encode([query]).tolist()
+        model = SentenceTransformer('all-MiniLM-L6-v2', cache_folder = "sbert_cache")
+        sentence_embeddings = model.encode(sentences, normalize_embeddings = True).tolist()
+        query_embedding = model.encode([query], normalize_embeddings = True).tolist()
     else:
         sentences = []
         sentence_embeddings = []
