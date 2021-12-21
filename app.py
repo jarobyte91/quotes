@@ -19,8 +19,15 @@ import numpy as np
 from dash.dependencies import Input, Output, State, ALL
 import plotly.express as px
 
+from dash.long_callback import DiskcacheLongCallbackManager
+import diskcache
+
 server = Flask(__name__)
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = server)
+#app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = server)
+
+cache = diskcache.Cache("./cache")
+long_callback_manager = DiskcacheLongCallbackManager(cache)
+app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], server = server, long_callback_manager=long_callback_manager)
 
 ###################################
 # Controls
@@ -326,12 +333,13 @@ def download(n_clicks, history):
     return dict(content = output, filename = "summary.txt") 
 
 
-@app.callback(
+@app.long_callback(
     Output("store_sentences", "data"),
     Output("store_sentence_embeddings", "data"),
     Output("store_query_embedding", "data"),
     Input("upload", "contents"),
-    State("query", "value")
+    State("query", "value"),
+    running = [(Output("upload", "disabled"), True, False)]
 )
 def upload_document(contents, query):
     if contents:
