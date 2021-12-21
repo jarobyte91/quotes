@@ -505,7 +505,7 @@ def update_plots(threshold, recommendations, history):
         data = pd.concat((recommendations, history), axis = 0)\
             .reset_index(drop = True)\
             .sort_values("sentence")
-        histogram = px.histogram(data, "score")
+        histogram = px.histogram(data, "score", nbins = 50)
         lineplot = px.line(data, x = "sentence", y = "score")
         lineplot.update_traces(marker={'size': 1})
         histogram.add_vline(x = threshold, annotation_text = "Threshold")
