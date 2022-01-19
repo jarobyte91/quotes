@@ -49,3 +49,8 @@ typing-extensions==3.10.0.2
 urllib3==1.26.7
 visdcc==0.0.40
 Werkzeug==2.0.2
+# last packages
+psutil==5.9.0
+diskcache==5.4.0
+multiprocess==0.70.12.2
+
