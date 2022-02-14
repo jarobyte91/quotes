@@ -28,23 +28,29 @@ def render_document(sentences, history, highlight):
 
 
 def compute_scores_dl(sentences, history, sentence_embeddings, query_embedding):
+    print("compute scores")
     relevant = history.query("relevance == True").shape[0]
     not_relevant = history.query("relevance != True").shape[0]
-    recommendations = [(i, s) for i, s in enumerate(sentences) 
-                       if i not in history.sentence.tolist()]
-    recommendations = pd.DataFrame(recommendations, 
-                                   columns = ["sentence", "text"])
-    history_sentences = history.sentence.map(int).values
-    recommendations_embeddings = sentence_embeddings[recommendations.sentence.map(int).values]
+    history_embeddings = sentence_embeddings[history.index]
+    recommendations_index = [i for i in sentences.index if i not in history.index]
+    recommendations_embeddings = sentence_embeddings[recommendations_index]
+    recommendations = sentences.loc[recommendations_index]
+    # recommendations = [(paper, sentence, text) for paper, sentence, text  in sentences.values 
+    #                    if sentence not in history.sentence.tolist()]
+    # recommendations = pd.DataFrame(recommendations, 
+    #                                columns = ["sentence", "text"])
+    # history_sentences = history.sentence.map(int).values
+    # recommendations_embeddings = sentence_embeddings[recommendations.sentence.map(int).values]
     if relevant > 0 and not_relevant > 0:
         classifier = SVC(probability = True)
-        X = sentence_embeddings[history_sentences]
+        X = history_embeddings
         Y = history.relevance
         classifier.fit(X, Y)
         scores = classifier.predict_proba(recommendations_embeddings)[:, 1]
     else:
         scores = (query_embedding @ recommendations_embeddings.T).squeeze()
     recommendations = recommendations.assign(score = scores)
+    print("recommendations", recommendations.shape)
     return recommendations
         
     
