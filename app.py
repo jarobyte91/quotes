@@ -199,7 +199,7 @@ store_highlighted_lines = html.P(0, id = "store_highlighted_lines",
                                  hidden = True)
 download = dcc.Download(id = "download")
 
-app.layout = dbc.Container(
+app.layout = dbc.Col(
     [
         html.H1("Query-focused Extractive Summarization"),
         html.Hr(),
