@@ -28,10 +28,8 @@ def render_document(sentences, history, highlight):
 
 
 def compute_scores_dl(sentences, history, sentence_embeddings, query_embedding):
-    print("compute scores")
     relevant = history.query("relevance == True").shape[0]
     not_relevant = history.query("relevance != True").shape[0]
-    history_embeddings = sentence_embeddings[history.index]
     recommendations_index = [i for i in sentences.index if i not in history.index]
     recommendations_embeddings = sentence_embeddings[recommendations_index]
     recommendations = sentences.loc[recommendations_index]
@@ -42,6 +40,7 @@ def compute_scores_dl(sentences, history, sentence_embeddings, query_embedding):
     # history_sentences = history.sentence.map(int).values
     # recommendations_embeddings = sentence_embeddings[recommendations.sentence.map(int).values]
     if relevant > 0 and not_relevant > 0:
+        history_embeddings = sentence_embeddings[history.index]
         classifier = SVC(probability = True)
         X = history_embeddings
         Y = history.relevance
@@ -50,7 +49,6 @@ def compute_scores_dl(sentences, history, sentence_embeddings, query_embedding):
     else:
         scores = (query_embedding @ recommendations_embeddings.T).squeeze()
     recommendations = recommendations.assign(score = scores)
-    print("recommendations", recommendations.shape)
     return recommendations
         
     
