@@ -1,8 +1,8 @@
-# flavia
+# QuOTeS
 
 
 ## Installation
 
-    git clone git@github.com:jarobyte91/flavia.git
-    cd flavia
+    git clone git@github.com:jarobyte91/quotes.git
+    cd quotes
     pip install -r requirements.txt
