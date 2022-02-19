@@ -324,12 +324,12 @@ tab_summary = dbc.Tab(
     [
         dbc.Row(
             [
-            dbc.Col([html.H3("Highlight Counts"), counts], width = 3),
-            dbc.Col(),
-            dbc.Col(
-                dbc.Card(dbc.Button("Download .txt", id = "download_txt")), 
-                width = 2
-            )
+                dbc.Col([html.H3("Highlight Counts"), counts], width = 3),
+                dbc.Col(),
+                dbc.Col(
+                    dbc.Card(dbc.Button("Download .txt", id = "download_txt")), 
+                    width = 2
+                )
             ]
         ),
         html.H3("Query"),
