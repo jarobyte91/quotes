@@ -407,7 +407,7 @@ app.layout = dbc.Container(
         store,
         dbc.Tabs(
             [
-                tab_settings, 
+                # tab_settings, 
                 tab_upload, 
                 tab_highlights, 
                 tab_reviews, 
