@@ -32,174 +32,23 @@ app = dash.Dash(
 app.title = "QuOTeS"
 
 ###################################
-# Controls
-###################################
-
-query = dbc.Container(
-    children = [
-        dbc.Row([
-            dbc.Col(html.H3("Query")),
-            dbc.Col(dbc.Card(dbc.Button("Submit", id = "submit")), width = 2)
-        ]),
-        dbc.Textarea(
-            id = "query", 
-            rows = 5
-        ),
-        html.H3("Relevant Sentences")
-    ], 
-    fluid = True
-)
-view_document = dbc.Card(dbc.Button("View document", id = "view_document"))
-upload = dbc.Card(dbc.Button(dcc.Upload('Upload paper', id = "upload")))
-settings_adjust = dbc.Card(dbc.Button("Adjust settings", id = "settings_adjust"))
-view_summary = dbc.Card(dbc.Button("View summary", id="view_summary"))
-buttons = dbc.Card([dbc.CardGroup([view_document, view_summary])])
-highlighted_words_front = html.Td(0, id = "highlighted_words_front", 
-                                  style = {"text-align":"right"})
-highlighted_lines_front = html.Td(0, id = "highlighted_lines_front", 
-                                  style = {"text-align":"right"})
-threshold = dbc.Card([html.H3("Threshold")])
-row1 = html.Tr([html.Td(html.Strong("Window size:")), 
-                html.Td(id = "window_size_front", 
-                        style = {"text-align":"right"})])
-row2 = html.Tr([html.Td(html.Strong("Threshold:")),
-                html.Td(id = "threshold_front", 
-                        style = {"text-align":"right"})])
-row3 = html.Tr([html.Td(html.Strong("Highlighted words: ")), 
-                highlighted_words_front])
-row4 = html.Tr([html.Td(html.Strong("Highlights: ")), 
-                highlighted_lines_front])
-row5 = html.Tr([html.Td(html.Strong("Reviewed: ")), 
-                html.Td(0, 
-                        id = "reviews", 
-                        style = {"text-align":"right"})])
-parameters_body = [row3, row4, row5]
-counts = dbc.Table(parameters_body)
-
-###################################
-# Summary
-###################################
-
-summary_body = dbc.Container(id = "summary_body", fluid = True)
-summary_display = summary_body
-
-####################################
-# View document
-###################################
-
-close_document = dbc.Button(
-    "Close",
-    id="close_document",
-    n_clicks=0,
-)
-
-document_modal = dbc.Modal(
-    [
-        dbc.ModalHeader(html.H1("Uploaded document")),
-        dbc.ModalBody([dbc.Card(id = "document_modal_body", 
-                                style = {"height":"400px", 
-                                         "overflow-y":"scroll"})]),
-        dbc.ModalFooter(close_document)
-    ],
-    id = "document_modal",
-    scrollable = False,
-    is_open = False,
-    size = "xl",
-)
-
-##################################
-# View summary
-###################################
-
-close_summary = dbc.Button(
-    "Close",
-    id = "close_summary",
-    n_clicks = 0,
-    style = {"float":"right"}
-)
-
-download_summary = dbc.Button(
-    "Download",
-    id = "download_summary",
-    n_clicks=0,
-    color = "link"
-)
-
-summary_modal = dbc.Modal(
-    [
-        dbc.ModalHeader(html.H1("Your summary")),
-        dbc.ModalFooter(dbc.Container([download_summary, close_summary]))
-    ],
-    id="summary_modal",
-    scrollable=True,
-    is_open=False,
-    size = "xl",
-)
-
-
-##################################
-# Settings modal
-##################################
-
-histogram = dbc.Col(dcc.Graph(id = "histogram", figure = px.bar(height = 300) ))
-lineplot = dbc.Col(dcc.Graph(id = "lineplot"))
-window_size_row = [html.Td(html.Strong("Window size:")), 
-                   html.Td(dcc.Input(value = 64, 
-                                     style = {"text-align":"right"},
-                                     id = "window_size"),)]
-threshold_row = [html.Td(html.Strong("Threshold:")), 
-                 html.Td(dcc.Input(value = 0.5, 
-                         style = {"text-align":"right"}, 
-                         id = "threshold"), )]
-highlighted_words_modal = html.Td(0, id = "highlighted_words_modal", 
-                                  style = {"text-align":"right"})
-highlighted_lines_modal = html.Td(0, id = "highlighted_lines_modal", 
-                                  style = {"text-align":"right"})
-highlighted_words_row = [html.Td(html.Strong("Highlighted words:")), 
-                         highlighted_words_modal]
-highlighted_lines_row = [html.Td(html.Strong("Highlights:")), 
-                         highlighted_lines_modal]
-parameters = dbc.Card(html.Table([html.Tr(window_size_row + \
-                                          highlighted_words_row),
-                                  html.Tr(threshold_row + \
-                                          highlighted_lines_row)]))
-settings = html.Div([parameters, dbc.Row([lineplot])])
-settings_close = dbc.Button("Close", id = "settings_close")
-submit = dbc.Card(dbc.Button("Compute word scores", id = "submit"))
-
-settings_modal = dbc.Modal(
-    [
-        dbc.ModalHeader(html.H1("Settings")),
-        dbc.ModalBody(settings),
-        dbc.ModalFooter([submit, settings_close])
-    ],
-    id = "settings_modal",
-    is_open = False,
-    scrollable = True,
-    size = "xl"
-)
-
-##################################
-# App Layout
-##################################
-
-###################################
 # Upload tab
 ###################################
+
 store_papers = dcc.Store(id = "store_papers")
 add_paper = html.Table(
     html.Tr(
         [
             html.Td(
                 dbc.Button(
-                    children = dcc.Upload(id = "add_paper", children = "Add Paper")
+                    children = dcc.Upload(id = "add_paper", children = "Upload file")
                 )
             ),
             html.Td("    "),
             html.Td("file:"),
             html.Td(id = "filename"), 
             html.Td("    "),
-            html.Td(dbc.Button(id = "process", children = "Process Paper"))
+            html.Td(dbc.Button(id = "process", children = "Add Paper"))
         ]
     )
 )
@@ -274,6 +123,41 @@ tab_reviews = dbc.Tab(
 # Summary tab
 ###################################
 
+summary_body = dbc.Container(id = "summary_body", fluid = True)
+summary_display = summary_body
+highlighted_words_front = html.Td(
+    0, 
+    id = "highlighted_words_front", 
+    style = {"text-align":"right"}
+)
+highlighted_lines_front = html.Td(
+    0, 
+    id = "highlighted_lines_front", 
+    style = {"text-align":"right"}
+)
+words = html.Tr(
+    [
+        html.Td(html.Strong("Highlighted words: ")), 
+        highlighted_words_front
+    ]
+)
+highlights = html.Tr(
+    [
+        html.Td(html.Strong("Highlights: ")), 
+        highlighted_lines_front
+    ]
+)
+reviews = html.Tr(
+    [
+        html.Td(html.Strong("Reviewed: ")), 
+        html.Td(
+            0, 
+            id = "reviews", 
+            style = {"text-align":"right"}
+        )
+    ]
+)
+counts = dbc.Table([words, highlights, reviews])
 tab_summary = dbc.Tab(
     label = "Summary", 
     label_style = {"font-size":"1.5em"},
@@ -298,11 +182,26 @@ tab_summary = dbc.Tab(
     ), 
 )
 
-
 ###################################
 # Highlights tab
 ###################################
 
+query = dbc.Container(
+    children = [
+        dbc.Row(
+            [
+                dbc.Col(html.H3("Query")),
+                dbc.Col(dbc.Card(dbc.Button("Submit", id = "submit")), width = 2)
+            ]
+        ),
+        dbc.Textarea(
+            id = "query", 
+            rows = 5
+        ),
+        html.H3("Relevant Sentences")
+    ], 
+    fluid = True
+)
 tab_highlights = dbc.Tab(
     label = "Highlights", 
     label_style = {"font-size":"1.5em"}, 
@@ -313,7 +212,25 @@ tab_highlights = dbc.Tab(
 )
 
 ###################################
-# Main Container 
+# Documents tab
+###################################
+
+tab_documents = dbc.Tab(
+    label = "Documents",
+    label_style = {"font-size":"1.5em"},
+    children = dbc.Container(
+        [
+            dcc.Graph(id = "barplot"),
+            dcc.Graph(id = "histogram"),
+            dcc.Graph(id = "boxplot"),
+        ],
+        fluid = True
+    )
+
+)
+
+###################################
+# Stores
 ###################################
 
 store_sentences = dcc.Store(id = "store_sentences")
@@ -339,7 +256,6 @@ store_highlighted_lines = html.P(
     hidden = True
 )
 download = dcc.Download(id = "download")
-
 store = html.Div(
     [
         store_sentences,
@@ -355,6 +271,10 @@ store = html.Div(
     ]
 )
 
+###################################
+# Main Container 
+###################################
+
 app.layout = dbc.Container(
     fluid = True, 
     children = [
@@ -365,6 +285,7 @@ app.layout = dbc.Container(
                 tab_upload, 
                 tab_highlights, 
                 tab_reviews, 
+                tab_documents, 
                 tab_summary
             ]
         ),
@@ -383,24 +304,36 @@ app.layout = dbc.Container(
     )
 def show_papers(papers, sentences):
     papers = pd.read_json(papers)
-    sentences = pd.read_json(sentences).groupby("paper")["sentence"].size().reset_index()
+    sentences = pd.read_json(sentences)\
+    .groupby("paper")["sentence"]\
+    .size()\
+    .reset_index()
     df = papers.merge(sentences)
-    
     output = []
     if len(df) > 0:
         rows = []
-        header = html.Tr([html.Th("Document"), 
-                          html.Th("Characters"), 
-                          html.Th("Sentences")])
+        header = html.Tr(
+            [
+                html.Th("File"), 
+                html.Th("Text"), 
+                html.Th("Characters"), 
+                html.Th("Sentences")
+            ]
+        )
         rows.append(header)
-        for paper, text, sentences in df.values:
-            r = html.Tr([html.Td(text[:200] + "..."), 
-                         html.Td(f"{len(text):,}"), 
-                         html.Td(sentences)])
-
+        for filename, paper, text, sentences in df.values:
+            r = html.Tr(
+                [
+                    html.Td(filename),
+                    html.Td(text[:200] + "..."), 
+                    html.Td(f"{len(text):,}"), 
+                    html.Td(sentences)
+                ]
+            )
             rows.append(r)
         output = dbc.Table(rows)
     return output
+
 
 @app.callback(
     Output("filename", "children"),
@@ -410,6 +343,7 @@ def show_papers(papers, sentences):
 def show_filename(contents, filename):
     return filename
 
+
 @app.callback(
     Output("store_papers", "data"),
     Output("store_sentences", "data"),
@@ -417,14 +351,15 @@ def show_filename(contents, filename):
     State("add_paper", "contents"),
     State("store_papers", "data"),
     State("store_sentences", "data"),
+    State("add_paper", "filename"),
     prevent_initial_call = True
     )
-def process_paper(clicks, contents, store_papers, store_sentences):
+def process_paper(clicks, contents, store_papers, store_sentences, filename):
     if store_papers and store_sentences:
         store_papers = pd.read_json(store_papers)
         store_sentences = pd.read_json(store_sentences)
     else:
-        store_papers = pd.DataFrame(columns = ["paper", "text"])
+        store_papers = pd.DataFrame(columns = ["filename","paper", "text"])
         store_sentences = pd.DataFrame(columns = ["paper", "sentence", "text"])
     if contents:
         content_type, content_string = contents.split(',')
@@ -434,12 +369,30 @@ def process_paper(clicks, contents, store_papers, store_sentences):
         document = "".join(pdf).replace("-\n", "").replace("\n", " ")
         tokenizer = PunktSentenceTokenizer(document)
         sentences = tokenizer.tokenize(document)
-        new_paper = pd.DataFrame([{"paper":len(store_papers), "text":document}])
-        store_papers = pd.concat((store_papers, new_paper), ignore_index = True, axis = 0)
-        sentences_df = pd.DataFrame([(len(store_papers) - 1, i, s) 
-                                     for i, s in enumerate(sentences)], columns = ["paper", "sentence", "text"])
-        store_sentences = pd.concat((store_sentences, sentences_df), ignore_index = True)
+        new_paper = pd.DataFrame(
+            [
+                {
+                    "filename":filename,
+                    "paper":len(store_papers), 
+                    "text":document
+                }
+            ]
+        )
+        store_papers = pd.concat(
+            (store_papers, new_paper), 
+            ignore_index = True, 
+            axis = 0
+        )
+        sentences_df = pd.DataFrame(
+            [(len(store_papers) - 1, i, s) for i, s in enumerate(sentences)], 
+            columns = ["paper", "sentence", "text"]
+        )
+        store_sentences = pd.concat(
+            (store_sentences, sentences_df), 
+            ignore_index = True
+        )
     return store_papers.to_json(), store_sentences.to_json()
+
 
 @app.callback(
     Output("download", "data"),
@@ -473,11 +426,18 @@ def update_recommendations_body(recommendations):
     if recommendations:
         recommendations = pd.read_json(recommendations).head().to_dict("records")
         summary_body = []
-        header = html.Tr([html.Th(["Estimated", html.Br(), "Relevance"], style = {"text-align":"center"}),
-                          html.Th("Paper", style = {"text-align":"center"}),
-                          html.Th("Sentence", style = {"text-align":"center"}),
-                          html.Th("Text", style = {"text-align":"center"}),
-                          html.Th("Relevant?", colSpan = 2, style = {"text-align":"center"})])
+        header = html.Tr(
+            [
+                html.Th(
+                    ["Estimated", html.Br(), "Relevance"], 
+                    style = {"text-align":"center"}
+                ),
+                html.Th("Paper", style = {"text-align":"center"}),
+                html.Th("Sentence", style = {"text-align":"center"}),
+                html.Th("Text", style = {"text-align":"center"}),
+                html.Th("Relevant?", colSpan = 2, style = {"text-align":"center"})
+            ]
+        )
         summary_body.append(header)
         for i, r in enumerate(recommendations):
             score = html.Td(round(r["score"], 3))
@@ -495,9 +455,11 @@ def update_recommendations_body(recommendations):
                                           index = i), 
                                 style = {"background":"firebrick"})
 
-            row = html.Tr([score, paper, sentence, content, html.Td(accept), html.Td(reject)], 
-                          id = dict(type = "recommendation_card", index = i), 
-                          style = {"background":"white"})
+            row = html.Tr(
+                [score, paper, sentence, content, html.Td(accept), html.Td(reject)], 
+                id = dict(type = "recommendation_card", index = i), 
+                style = {"background":"white"}
+            )
             summary_body.append(row)
     else:
         summary_body = []
@@ -511,20 +473,36 @@ def update_recommendations_body(recommendations):
 )
 def update_history_body(history):
     history = pd.read_json(history).to_dict("records")
-    header = html.Thead([html.Th("Paper"), html.Th("Sentence"), html.Th("Text"), html.Th("Relevant?", colSpan = 2)])
+    header = html.Thead(
+        [
+            html.Th("Paper"), 
+            html.Th("Sentence"), 
+            html.Th("Text"), 
+            html.Th("Relevant?", colSpan = 2)
+        ]
+    )
     history_body = [header]
     for i, r in enumerate(history):
         paper = html.Td(r["paper"])
         sentence = html.Td(r["sentence"])
-        content = html.Td(dbc.Button(r["text"], 
-                              id = dict(type = "history", index = i), 
-                              color = "link"))
-        accept = dbc.Button("✔", 
-                            id = dict(type = "history_accept", index = i), 
-                            style = {"background":"seagreen"})
-        reject = dbc.Button("✕", 
-                            id = dict(type = "history_reject", index = i), 
-                            style = {"background":"firebrick"})
+        content = html.Td(
+            dbc.Button(r["text"], 
+            id = dict(
+                type = "history", 
+                index = i
+            ), 
+            color = "link")
+        )
+        accept = dbc.Button(
+            "✔", 
+            id = dict(type = "history_accept", index = i), 
+            style = {"background":"seagreen"}
+        )
+        reject = dbc.Button(
+            "✕", 
+            id = dict(type = "history_reject", index = i), 
+            style = {"background":"firebrick"}
+        )
         card_style = {"background":"lightgreen"} if r["relevance"] else {"background":"lightpink"} 
         row = html.Tr([paper, sentence, content, html.Td(accept), html.Td(reject)], 
                       id = dict(type = "history_card", index = i), 
@@ -558,14 +536,23 @@ def update_history(*args):
         recommendations = pd.read_json(recommendations)
         if subtype == "recommendation":
             r = recommendations.to_dict("records")[index]
-            new = dict(paper = r["paper"],
-                       sentence = r["sentence"], 
-                       text = r["text"], 
-                       relevance = True if accept == "accept" else False)
-            history = pd.concat((history, pd.DataFrame([new], index = [recommendations.index[index]])))
+            new = dict(
+                paper = r["paper"],
+                sentence = r["sentence"], 
+                text = r["text"], 
+                relevance = True if accept == "accept" else False
+            )
+            history = pd.concat(
+                (
+                    history, 
+                    pd.DataFrame([new], index = [recommendations.index[index]])
+                )
+            )
         else:
             history.iloc[index, -1] = True if accept == "accept" else False
+    print(history)
     return history.to_json()
+
 
 @app.callback(
     Output("store_sentence_embeddings", "data"),
@@ -592,6 +579,7 @@ def compute_embeddings(clicks, sentences, query):
     ).tolist()
     return json.dumps(sentence_embeddings), json.dumps(query_embedding)
 
+
 @app.callback(
     Output("store_recommendations", "data"),
     Input("store_history", "data"),
@@ -600,7 +588,12 @@ def compute_embeddings(clicks, sentences, query):
     State("store_sentences", "data"),
     prevent_initial_call = True,
 )
-def update_recommendations(history, sentence_embeddings, query_embedding, sentences):
+def update_recommendations(
+    history, 
+    sentence_embeddings, 
+    query_embedding, 
+    sentences
+):
     history = pd.read_json(history)
     sentence_embeddings = np.array(json.loads(sentence_embeddings))
     query_embedding = np.array(json.loads(query_embedding))
@@ -620,6 +613,7 @@ def update_recommendations(history, sentence_embeddings, query_embedding, senten
         recommendations = pd.DataFrame()
     return recommendations.to_json()
 
+
 @app.callback(
     Output("highlighted_words_front", "children"),
     Output("highlighted_lines_front", "children"),
@@ -629,11 +623,13 @@ def update_recommendations(history, sentence_embeddings, query_embedding, senten
 def update_highlighted(history):
     history = pd.read_json(history)
     relevant = history.query("relevance == True")
-    words = len(re.findall(r"\w+", 
-                           " ".join(relevant.text)))
+    words = len(
+        re.findall(r"\w+", " ".join(relevant.text))
+    )
     lines = relevant.shape[0]
     reviews = history.shape[0]
     return f"{words:,}", f"{lines:,}", f"{reviews:,}" 
+
 
 @app.callback(
     Output("accepted_sentences", "children"),
@@ -645,6 +641,7 @@ def update_accepted_sentences(history):
     sentences = history.query("relevance == True").text
     return [html.Li(s) for s in sentences]
 
+
 @app.callback(
     Output("reviews_query", "children"),
     Output("summary_query", "children"),
@@ -654,6 +651,82 @@ def update_accepted_sentences(history):
 )
 def update_query_value(clicks, query):
     return query, query
+
+
+@app.callback(
+    Output("barplot", "figure"),
+    Output("histogram", "figure"),
+    Output("boxplot", "figure"),
+    Input("store_recommendations", "data"),
+    Input("store_history", "data"),
+    State("store_papers", "data"),
+    prevent_initial_call = True
+)
+def update_plots(recommendations, history, papers):
+    barplot = None
+    histogram = None
+    boxplot = None
+    if papers:
+        papers = pd.read_json(papers)\
+        .assign(label = lambda df: df.text.map(lambda x: x[:20] + "..."))\
+        .drop(columns = ["text"])
+
+    if history:
+        history = pd.read_json(history)\
+        .groupby(["paper", "relevance"], dropna = False)\
+        .size()\
+        .reset_index()\
+        .rename(columns = {0:"highlights"})\
+        .merge(papers, left_on = "paper", right_on = "paper")\
+        .sort_values("paper")\
+        .assign(relevance = lambda df: df.relevance.map({1:True, 0:False}))
+
+        barplot = px.histogram(
+            data_frame = history, 
+            x = "highlights", 
+            y = "label", 
+            color = "relevance", 
+            orientation = "h",
+            title = "Highlights by Document",
+            labels = {
+                "label":"Document", 
+                "relevance":"Relevant"
+            },
+            barmode = "group",
+            category_orders = {
+                "relevance":[True, False]
+            }
+        )
+        barplot.update_layout(xaxis_title = "Highlights")
+
+    if recommendations:
+        recommendations = pd.read_json(recommendations)\
+        .merge(papers, left_on = "paper", right_on = "paper")\
+        .sort_values("paper")\
+
+        histogram = px.histogram(
+            data_frame = recommendations, 
+            x = "score", 
+            title = "Distribution of the Recommendation Score",
+            labels = {"score":"Score"},
+            nbins = 30,
+            range_x = [0, 1]
+        )
+        histogram.update_layout(
+            # xaxis_range = [0, 1],
+            yaxis_title = "Frequency"
+        )
+
+        boxplot = px.box(
+            data_frame = recommendations, 
+            y = "label", 
+            x = "score", 
+            orientation = "h",
+            title = "Recommendation Scores by Document",
+            labels = {"score":"Score", "label":"Document"},
+        )
+        boxplot.update_traces(hoverinfo = "skip", hovertemplate = None)
+    return barplot, histogram, boxplot
 
 
 if __name__ == '__main__':

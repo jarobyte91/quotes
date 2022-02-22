@@ -33,12 +33,6 @@ def compute_scores_dl(sentences, history, sentence_embeddings, query_embedding):
     recommendations_index = [i for i in sentences.index if i not in history.index]
     recommendations_embeddings = sentence_embeddings[recommendations_index]
     recommendations = sentences.loc[recommendations_index]
-    # recommendations = [(paper, sentence, text) for paper, sentence, text  in sentences.values 
-    #                    if sentence not in history.sentence.tolist()]
-    # recommendations = pd.DataFrame(recommendations, 
-    #                                columns = ["sentence", "text"])
-    # history_sentences = history.sentence.map(int).values
-    # recommendations_embeddings = sentence_embeddings[recommendations.sentence.map(int).values]
     if relevant > 0 and not_relevant > 0:
         history_embeddings = sentence_embeddings[history.index]
         classifier = SVC(probability = True)
