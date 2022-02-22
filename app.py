@@ -16,7 +16,7 @@ from nltk.tokenize import PunktSentenceTokenizer
 import numpy as np
 from dash.dependencies import Input, Output, State, ALL
 import plotly.express as px
-
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from dash.long_callback import DiskcacheLongCallbackManager
 import diskcache
 
@@ -564,19 +564,22 @@ def update_history(*args):
 )
 def compute_embeddings(clicks, sentences, query):
     sentences = pd.read_json(sentences)
-    model = SentenceTransformer(
-        'all-MiniLM-L6-v2', 
-        cache_folder = "sbert_cache"
-    )
-    sentence_embeddings = model.encode(
-        sentences.text, 
-        normalize_embeddings = True,
-        batch_size = 4
-    ).tolist()
-    query_embedding = model.encode(
-        [query], 
-        normalize_embeddings = True
-    ).tolist()
+    # model = SentenceTransformer(
+    #     'all-MiniLM-L6-v2', 
+    #     cache_folder = "sbert_cache"
+    # )
+    # sentence_embeddings = model.encode(
+    #     sentences.text, 
+    #     normalize_embeddings = True,
+    #     batch_size = 4
+    # ).tolist()
+    # query_embedding = model.encode(
+    #     [query], 
+    #     normalize_embeddings = True
+    # ).tolist()
+    vectorizer = TfidfVectorizer(analyzer = "char", ngram_range = (2, 3))
+    sentence_embeddings = vectorizer.fit_transform(sentences.text).toarray().tolist()
+    query_embedding = vectorizer.transform([query]).toarray().tolist()
     return json.dumps(sentence_embeddings), json.dumps(query_embedding)
 
 
@@ -599,7 +602,7 @@ def update_recommendations(
     query_embedding = np.array(json.loads(query_embedding))
     sentences = pd.read_json(sentences)
     if len(sentences) > 0:
-        recommendations = lib.compute_scores_dl(
+        recommendations = lib.compute_scores(
             sentences, 
             history, 
             sentence_embeddings, 

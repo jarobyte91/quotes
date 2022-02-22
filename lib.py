@@ -27,7 +27,7 @@ def render_document(sentences, history, highlight):
     return dbc.Table(body, bordered = True)
 
 
-def compute_scores_dl(sentences, history, sentence_embeddings, query_embedding):
+def compute_scores(sentences, history, sentence_embeddings, query_embedding):
     relevant = history.query("relevance == True").shape[0]
     not_relevant = history.query("relevance != True").shape[0]
     recommendations_index = [i for i in sentences.index if i not in history.index]
