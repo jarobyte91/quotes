@@ -1,6 +1,7 @@
 from dash import html
 import pandas as pd
 from sklearn.svm import SVC
+# from sklearn.linear_model import LogisticRegression
 import dash_bootstrap_components as dbc
 
 
@@ -36,6 +37,7 @@ def compute_scores(sentences, history, sentence_embeddings, query_embedding):
     if relevant > 0 and not_relevant > 0:
         history_embeddings = sentence_embeddings[history.index]
         classifier = SVC(probability = True)
+        # classifier = LogisticRegression()
         X = history_embeddings
         Y = history.relevance
         classifier.fit(X, Y)

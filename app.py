@@ -16,7 +16,8 @@ from nltk.tokenize import PunktSentenceTokenizer
 import numpy as np
 from dash.dependencies import Input, Output, State, ALL
 import plotly.express as px
-from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+# from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+# from sklearn.preprocessing import normalize
 from dash.long_callback import DiskcacheLongCallbackManager
 import diskcache
 
@@ -550,7 +551,7 @@ def update_history(*args):
             )
         else:
             history.iloc[index, -1] = True if accept == "accept" else False
-    print(history)
+    # print(history)
     return history.to_json()
 
 
@@ -564,22 +565,26 @@ def update_history(*args):
 )
 def compute_embeddings(clicks, sentences, query):
     sentences = pd.read_json(sentences)
-    # model = SentenceTransformer(
-    #     'all-MiniLM-L6-v2', 
-    #     cache_folder = "sbert_cache"
-    # )
-    # sentence_embeddings = model.encode(
-    #     sentences.text, 
-    #     normalize_embeddings = True,
-    #     batch_size = 4
-    # ).tolist()
-    # query_embedding = model.encode(
-    #     [query], 
-    #     normalize_embeddings = True
-    # ).tolist()
-    vectorizer = TfidfVectorizer(analyzer = "char", ngram_range = (2, 3))
-    sentence_embeddings = vectorizer.fit_transform(sentences.text).toarray().tolist()
-    query_embedding = vectorizer.transform([query]).toarray().tolist()
+    model = SentenceTransformer(
+        'all-MiniLM-L6-v2', 
+        cache_folder = "sbert_cache"
+    )
+    sentence_embeddings = model.encode(
+        sentences.text, 
+        normalize_embeddings = True,
+        batch_size = 4
+    ).tolist()
+    query_embedding = model.encode(
+        [query], 
+        normalize_embeddings = True
+    ).tolist()
+    #vectorizer = CountVectorizer(analyzer = "char", ngram_range = (2, 3))
+
+    #sentence_embeddings = vectorizer.fit_transform(sentences.text).toarray()
+    #sentence_embeddings = normalize(sentence_embeddings).tolist()
+
+    #query_embedding = vectorizer.transform([query]).toarray()
+    #query_embedding = normalize(query_embedding).tolist()
     return json.dumps(sentence_embeddings), json.dumps(query_embedding)
 
 
@@ -725,7 +730,7 @@ def update_plots(recommendations, history, papers):
             y = "label", 
             x = "score", 
             orientation = "h",
-            title = "Recommendation Scores by Document",
+            title = "Distribution of Recommendation Scores by Document",
             labels = {"score":"Score", "label":"Document"},
         )
         boxplot.update_traces(hoverinfo = "skip", hovertemplate = None)
