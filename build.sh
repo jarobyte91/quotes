@@ -1,1 +1,1 @@
-docker build -t quotes:latest .
+docker build --tag=quotes:latest --file=Dockerfile .
