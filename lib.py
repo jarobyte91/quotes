@@ -39,8 +39,8 @@ def compute_scores(sentences, history, sentence_embeddings, query_embedding):
         classifier = SVC(probability = True)
         # classifier = LogisticRegression()
         # X = (history_embeddings - query_embedding)**2
-        # X = history_embeddings - query_embedding
-        X = history_embeddings - query_embedding
+        # X = abs(history_embeddings - query_embedding)
+        X = history_embeddings
         Y = history.relevance
         classifier.fit(X, Y)
         scores = classifier.predict_proba(recommendations_embeddings)[:, 1]

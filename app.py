@@ -42,7 +42,10 @@ add_paper = html.Table(
         [
             html.Td(
                 dbc.Button(
-                    children = dcc.Upload(id = "add_paper", children = "Upload file")
+                    children = dcc.Upload(
+                        id = "add_paper", 
+                        children = "Upload file"
+                    )
                 )
             ),
             html.Td("    "),
@@ -111,7 +114,12 @@ tab_history = dbc.Tab(
                         width = 2
                     ),
                     dbc.Col(
-                        dbc.Card(dbc.Button("Download .csv", id = "download_csv")),
+                        dbc.Card(
+                            dbc.Button(
+                                "Download .csv", 
+                                id = "download_csv"
+                            )
+                        ),
                         width = 2
                     )
                 ]
@@ -227,8 +235,14 @@ query = dbc.Container(
         dbc.Row(
             [
                 dbc.Col(html.H3("Query")),
-                dbc.Col(dbc.Card(dbc.Button("Submit", id = "submit")), width = 2),
-                dbc.Col(dbc.Card(dbc.Button("Settings", id = "settings")), width = 2),
+                dbc.Col(
+                    dbc.Card(dbc.Button("Submit", id = "submit")), 
+                    width = 2
+                ),
+                dbc.Col(
+                    dbc.Card(dbc.Button("Settings", id = "settings")), 
+                    width = 2
+                ),
             ]
         ),
         dbc.Textarea(
@@ -240,7 +254,7 @@ query = dbc.Container(
     fluid = True
 )
 tab_explore = dbc.Tab(
-    label = "Explore", 
+    label = "Search", 
     label_style = {"font-size":"1.5em"}, 
     children =[
         query,
@@ -253,7 +267,7 @@ tab_explore = dbc.Tab(
 ###################################
 
 tab_overview = dbc.Tab(
-    label = "Overview",
+    label = "Dashboard",
     label_style = {"font-size":"1.5em"},
     children = dbc.Container(
     #children = dbc.Col(
@@ -363,7 +377,10 @@ def show_papers(papers, sentences):
         # header = html.Tr(
         header = html.Thead(
             [
-                html.Th("File", style = {"width":"20%", "overflow-wrap":"anywhere"}), 
+                html.Th(
+                    "File", 
+                    style = {"width":"20%", "overflow-wrap":"anywhere"}
+                ), 
                 html.Th("Text"), 
                 html.Th("Characters"), 
                 html.Th("Words"),
@@ -375,7 +392,10 @@ def show_papers(papers, sentences):
             words = len(list(re.findall(r"\w+", text)))
             r = html.Tr(
                 [
-                    html.Td(filename, style = {"width":"20%", "overflow-wrap":"anywhere"}),
+                    html.Td(
+                        filename, 
+                        style = {"width":"20%", "overflow-wrap":"anywhere"}
+                    ),
                     html.Td(text[:200] + "..."), 
                     html.Td(f"{len(text):,}"), 
                     html.Td(f'{words:,}'), 
@@ -412,7 +432,9 @@ def process_paper(clicks, contents, store_papers, store_sentences, filename):
         store_sentences = pd.read_json(store_sentences)
     else:
         store_papers = pd.DataFrame(columns = ["filename","paper", "text"])
-        store_sentences = pd.DataFrame(columns = ["paper", "sentence", "text"])
+        store_sentences = pd.DataFrame(
+            columns = ["paper", "sentence", "text"]
+        )
     if contents:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -436,7 +458,10 @@ def process_paper(clicks, contents, store_papers, store_sentences, filename):
             axis = 0
         )
         sentences_df = pd.DataFrame(
-            [(len(store_papers) - 1, i, s) for i, s in enumerate(sentences)], 
+            [
+                (len(store_papers) - 1, i, s) 
+                for i, s in enumerate(sentences)
+            ], 
             columns = ["paper", "sentence", "text"]
         )
         store_sentences = pd.concat(
@@ -587,60 +612,68 @@ def update_history_body(history):
 
 @app.callback(
     Output("store_history", "data"),
+    Input("clear", "n_clicks"),
+    Input("store_sentences", "data"),
+    Input("store_query_embedding", "data"),
+    Input("store_sentence_embeddings", "data"),
     Input({"type":"recommendation_accept", "index":ALL}, "n_clicks"),
     Input({"type":"recommendation_reject", "index":ALL}, "n_clicks"),
     Input({"type":"history_accept", "index":ALL}, "n_clicks"),
     Input({"type":"history_reject", "index":ALL}, "n_clicks"),
-    Input("clear", "n_clicks"),
     State("store_history", "data"),
     State("store_recommendations", "data"),
     prevent_initial_call = True
 )
 def update_history(*args):
+    #print("update_history")
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"]
     value = ctx.triggered[0]["value"]
-    print(prop_id)
-    print(value)
+    # print(ctx.triggered[0])
+    # print(prop_id)
+    # print(value)
     index_type, attribute = prop_id.split(".")
-    print(index_type)
-    if index_type:
+    # print(index_type)
+    history = pd.DataFrame(
+        columns = ["paper", "sentence", "text", "relevance"]
+    )
+    if index_type not in [
+        "clear", 
+        "store_sentences",
+        "store_query_embedding",
+        "store_sentence_embeddings"
+    ]:
         index_type = json.loads(index_type)
         index = index_type["index"]
         type = index_type["type"]
         subtype, accept = type.split("_")
-    else:
-        index_type = None
-        index = None
-        type = None
-        subtype, accept = None, None
-    history = args[-2]
-    recommendations = args[-1]
-    if value and recommendations and history:
-        recommendations = pd.read_json(recommendations)
-        history = pd.read_json(history)
-        if subtype == "recommendation":
-            r = recommendations.to_dict("records")[index]
-            new = dict(
-                paper = r["paper"],
-                sentence = r["sentence"], 
-                text = r["text"], 
-                relevance = True if accept == "accept" else False
-            )
-            history = pd.concat(
-                (
-                    history, 
-                    pd.DataFrame([new], index = [recommendations.index[index]])
-                )
-            )
-        elif prop_id == "clear":
-            history = pd.DataFrame(columns = ["paper", "sentence", "text", "relevance"])
+        history = args[-2]
+        recommendations = args[-1]
+        if value is None:
+            return history
         else:
-            history.iloc[index, -1] = True if accept == "accept" else False
-    # print(history)
-        return history.to_json()
-    else:
-        return history
+            recommendations = pd.read_json(recommendations)
+            history = pd.read_json(history)
+            if subtype == "history":
+                history.iloc[index, -1] = True if accept == "accept" else False
+            else:
+                r = recommendations.to_dict("records")[index]
+                new = dict(
+                    paper = r["paper"],
+                    sentence = r["sentence"], 
+                    text = r["text"], 
+                    relevance = True if accept == "accept" else False
+                )
+                history = pd.concat(
+                    (
+                        history, 
+                        pd.DataFrame(
+                            [new], 
+                            index = [recommendations.index[index]]
+                        )
+                    )
+                )
+    return history.to_json()
 
 
 @app.callback(
@@ -656,7 +689,8 @@ def compute_embeddings(clicks, sentences, query):
         sentences = pd.read_json(sentences)
         model = SentenceTransformer(
             'all-MiniLM-L6-v2', 
-            cache_folder = "sbert_cache"
+            cache_folder = "sbert_cache",
+            device = "cpu"
         )
         sentence_embeddings = model.encode(
             sentences.text, 
@@ -785,45 +819,59 @@ def update_plots(recommendations, history, papers):
             color = ["Relevant", "Not Relevant", "Total"],
             y = [relevant, not_relevant, total],
             # color = "relevance",
-            title = "Highlights",
+            title = "Sentences",
             labels = {
                 "x":"",
-                "y":"Highlights",
+                "y":"Sentences",
             },
+            # hover_data = {"x":False, "y":True, "color":False}
             # category_orders = {
             #     "relevance":[True, False]
             # }       
         )
         general.update_layout(showlegend = False)
+        general.update_traces(hoverinfo = "skip", hovertemplate = None)
 
-        # barplot = px.histogram(
-        #     data_frame = history\
-        #         .groupby(["paper", "relevance"], dropna = False)\
-        #         .size()\
-        #         .reset_index()\
-        #         .rename(columns = {0:"highlights"})\
-        #         .merge(papers, left_on = "paper", right_on = "paper")\
-        #         .sort_values("paper")\
-        #         .assign(relevance = lambda df: df.relevance.map({1:True, 0:False})),
-        #     x = "highlights", 
-        #     y = "label", 
-        #     color = "relevance", 
-        #     orientation = "h",
-        #     title = "Highlights by Document",
-        #     labels = {
-        #         "label":"Document", 
-        #         "relevance":"Relevant"
-        #     },
-        #     barmode = "group",
-        #     category_orders = {
-        #         "relevance":[True, False]
-        #     }
-        # )
-        # barplot.update_layout(xaxis_title = "Highlights")
+        barplot = px.histogram(
+            data_frame = history\
+                .groupby(["paper", "relevance"], dropna = False)\
+                .size()\
+                .reset_index()\
+                .rename(columns = {0:"highlights"})\
+                .merge(papers, left_on = "paper", right_on = "paper")\
+                .sort_values("paper")\
+                .assign(
+                    relevance = lambda df: df.relevance.map(
+                        {1:True, 0:False}
+                    )
+                ),
+            x = "highlights", 
+            y = "label", 
+            color = "relevance", 
+            orientation = "h",
+            title = "Sentences by Document",
+            labels = {
+                "label":"Document", 
+                "relevance":"Relevant"
+            },
+            barmode = "group",
+            category_orders = {
+                "relevance":[True, False]
+            },
+            # hover_data = {"x":False, "y":False, "color":True}
+        )
+        barplot.update_layout(xaxis_title = "Sentences")
+        barplot.update_traces(hoverinfo = "skip", hovertemplate = None)
 
-        # recommendations = pd.read_json(recommendations)\
-        # .merge(papers, left_on = "paper", right_on = "paper")\
-        # .sort_values("paper")\
+        recommendations = pd.read_json(recommendations)\
+        .merge(papers, left_on = "paper", right_on = "paper")\
+        .sort_values("paper")\
+
+        counts, bins = np.histogram(
+            recommendations.score, 
+            bins = np.arange(0, 1.01, 0.02)
+        )
+        bins = 0.5 * (bins[:-1] + bins[1:])
 
         # histogram = px.histogram(
         #     data_frame = recommendations, 
@@ -831,23 +879,33 @@ def update_plots(recommendations, history, papers):
         #     title = "Distribution of the Recommendation Score",
         #     labels = {"score":"Score"},
         #     # nbins = 30,
-        #     # range_x = [0, 1]
+        #     range_x = [0, 1]
         # )
-        # histogram.update_layout(
-        #     xaxis_range = [0, 1],
-        #     yaxis_title = "Frequency"
-        # )
+        histogram = px.bar(
+            x = bins, 
+            y = counts,
+            title = "Distribution of the Recommendation Score",
+            labels = {"x":"Score", "y":"Frequency"},
+        )
+        histogram.update_layout(
+            xaxis_range = [-0.1, 1.1],
+            yaxis_title = "Frequency"
+        )
 
-        # boxplot = px.strip(
-        #     data_frame = recommendations, 
-        #     y = "label", 
-        #     x = "score", 
-        #     orientation = "h",
-        #     hover_name = "label",
-        #     title = "Distribution of the Recommendation Score by Document",
-        #     labels = {"score":"Score", "label":"Document"},
-        # )
-        # boxplot.update_traces(h overinfo = "skip", hovertemplate = None)
+        boxplot = px.box(
+            data_frame = recommendations, 
+            y = "label", 
+            x = "score", 
+            color = "label",
+            orientation = "h",
+            # hover_name = "label",
+            title = "Distribution of the Recommendation Score by Document",
+            labels = {"score":"Score", "label":"Document"},
+            range_x = [-0.1, 1.1],
+            color_discrete_sequence = px.colors.qualitative.Pastel
+        )
+        boxplot.update_layout(showlegend = False)
+        boxplot.update_traces(hoverinfo = "skip", hovertemplate = None)
     return general, barplot, histogram, boxplot
 
 @app.callback(
@@ -869,7 +927,9 @@ def update_documents_body(sentences, dropdown_value):
             ]
         )
         documents_body.append(header)
-        for i, r in enumerate(sentences.query(f"paper == {dropdown_value}").to_dict("records")):
+        for i, r in enumerate(
+            sentences.query(f"paper == {dropdown_value}").to_dict("records")
+        ):
             row = html.Tr(
                 [
                     html.Td(i),
