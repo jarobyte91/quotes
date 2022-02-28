@@ -16,8 +16,8 @@ from nltk.tokenize import PunktSentenceTokenizer
 import numpy as np
 from dash.dependencies import Input, Output, State, ALL
 import plotly.express as px
-# from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
-# from sklearn.preprocessing import normalize
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.preprocessing import normalize
 from dash.long_callback import DiskcacheLongCallbackManager
 import diskcache
 
@@ -33,66 +33,144 @@ app = dash.Dash(
 app.title = "QuOTeS"
 
 ###################################
+# Settings Modal
+###################################
+
+embeddings_dropdown = dcc.Dropdown(
+    options = [
+        {"label":"Word Unigrams", "value":"Word Unigrams"},
+        {
+            "label":"Character Trigrams", 
+            "value":"Character Trigrams"
+        }, 
+        {
+            "label":"Sentence-BERT Embeddings", 
+            "value":"Sentence-BERT Embeddings"
+        },
+    ],
+    value = "Word Unigrams",
+    id = "embeddings_dropdown",
+    clearable = False
+)
+
+classifier_dropdown = dcc.Dropdown(
+    options = [
+        {
+            "label":"Support Vector Machine", 
+            "value":"Support Vector Machine", 
+        },
+        {
+            "label":"Logistic Regression", 
+            "value":"Logistic Regression", 
+        },
+        {
+            "label":"Random Forest", 
+            "value":"Random Forest", 
+        },
+    ],
+    value = "Support Vector Machine",
+    id = "classifier_dropdown",
+    clearable = False
+)
+
+settings_modal = dbc.Modal(
+    id = "settings_modal",
+    is_open = False,
+    children = [
+        dbc.ModalHeader(html.H3("Settings")),
+        dbc.ModalBody(
+            [
+                html.H5("Embeddings"),
+                embeddings_dropdown,
+                html.H5("Classifier"),
+                classifier_dropdown,
+            ]
+        ),
+        dbc.ModalFooter(dbc.Button("Close", id = "close")),
+    ]
+)
+
+###################################
 # Upload tab
 ###################################
 
-store_papers = dcc.Store(id = "store_papers")
-add_paper = html.Table(
-    html.Tr(
-        [
-            html.Td(
-                dbc.Button(
-                    children = dcc.Upload(
-                        id = "add_paper", 
-                        children = "Upload file"
-                    )
-                )
+add_paper = dbc.Row(
+    [
+        dbc.Col(
+            dbc.Card(dbc.Button(dcc.Upload("Upload file", id = "upload"))),
+            width = 2,
+            align = "center"
+        ),
+        dbc.Col(
+            dbc.Card(dbc.Button("Add Paper", id = "add_paper")),
+            width = 2,
+            align = "center"
+        ),
+        dbc.Col(
+            dbc.Row(
+                [
+                    "file: ",
+                    html.Div(id = "filename")
+                ],
             ),
-            html.Td("    "),
-            html.Td("file:"),
-            html.Td(id = "filename"), 
-            html.Td("    "),
-            html.Td(dbc.Button(id = "process", children = "Add Paper"))
-        ]
-    )
-)
+            align = "center"
+        )
+    ]
+)   
 tab_upload = dbc.Tab(
     label = "Upload", 
     id = "tab_upload", 
     label_style = {"font-size":"1.5em"},
     children = dbc.Container(
         [
-            store_papers,
+            settings_modal,
             html.P(),
             add_paper,
             html.P(),
             html.H3("Uploaded Papers"),
-            html.Div(id = "paper_list_show")
+            html.Div(id = "paper_list_show"),           
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.Button("Process Papers", id = "process_papers")
+                        ),
+                        width = 2,
+                        align = "center"
+                    ),
+                    dbc.Col(
+                        dbc.Card(dbc.Button("Settings", id = "settings")),
+                        width = 2,
+                        align = "center"
+                    ),
+                    dbc.Col(
+                        dbc.Table(
+                            [
+                                html.Tr(
+                                    [
+                                        html.Td("Embeddings Dimensions:"),
+                                        html.Td(
+                                            id = "embeddings_dimensions",
+                                            style = {"text-align":"right"}),
+                                    ],
+                                ),
+                                html.Tr(
+                                    [
+                                        html.Td("Vocabulary Tokens:"),
+                                        html.Td(
+                                            id = "vocabulary_tokens",
+                                            style = {"text-align":"right"}
+                                        )
+                                    ]
+                                )
+                            ]
+                        ),
+                        width = 4
+                    )
+                ]
+            ),
         ], 
         fluid = True
-    )
-)
-
-###################################
-# Settings tab
-###################################
-
-tab_settings = dbc.Tab(
-    label = "Settings", 
-    label_style = {"font-size":"1.5em"},
-    children = dbc.Container(
-        dbc.DropdownMenu(
-            [
-                dbc.DropdownMenuItem("Deep Learning", header = True),
-                dbc.DropdownMenuItem("all-MiniLM-L6-v2"),
-                dbc.DropdownMenuItem(divider = True),
-                dbc.DropdownMenuItem("Classical", header = True),
-                dbc.DropdownMenuItem("Character Trigrams"),
-                dbc.DropdownMenuItem(divider = True),
-            ],
-            label = "Model"
-        ),
-        fluid = True,
     )
 )
 
@@ -111,7 +189,7 @@ tab_history = dbc.Tab(
                     dbc.Col(),
                     dbc.Col(
                         dbc.Card(dbc.Button("Clear history", id = "clear")),
-                        width = 2
+                        width = 3
                     ),
                     dbc.Col(
                         dbc.Card(
@@ -120,7 +198,7 @@ tab_history = dbc.Tab(
                                 id = "download_csv"
                             )
                         ),
-                        width = 2
+                        width = 3
                     )
                 ]
             ),
@@ -136,39 +214,6 @@ tab_history = dbc.Tab(
 # Summary tab
 ###################################
 
-# highlighted_words_front = html.Td(
-#     0, 
-#     id = "highlighted_words_front", 
-#     style = {"text-align":"right"}
-# )
-# highlighted_lines_front = html.Td(
-#     0, 
-#     id = "highlighted_lines_front", 
-#     style = {"text-align":"right"}
-# )
-# words = html.Tr(
-#     [
-#         html.Td(html.Strong("Highlighted words: ")), 
-#         highlighted_words_front
-#     ]
-# )
-# highlights = html.Tr(
-#     [
-#         html.Td(html.Strong("Highlights: ")), 
-#         highlighted_lines_front
-#     ]
-# )
-# reviews = html.Tr(
-#     [
-#         html.Td(html.Strong("Reviewed: ")), 
-#         html.Td(
-#             0, 
-#             id = "reviews", 
-#             style = {"text-align":"right"}
-#         )
-#     ]
-# )
-# counts = dbc.Table([words, highlights, reviews])
 tab_summary = dbc.Tab(
     label = "Summary",
     label_style = {"font-size":"1.5em"},
@@ -180,11 +225,10 @@ tab_summary = dbc.Tab(
                 dbc.Col(),
                 dbc.Col(
                     dbc.Card(dbc.Button("Download .txt", id = "download_txt")), 
-                    width = 2
+                    width = 3
                 )
             ]
         ),
-        # html.H3("Query"),
         html.P(id = "summary_query"),
         html.H3("Accepted Sentences"),
         html.Ul(id = "accepted_sentences")
@@ -200,9 +244,6 @@ tab_summary = dbc.Tab(
 dropdown = dcc.Dropdown(
     id = "document_dropdown",
 )
-#print(dropdown.available_properties)
-
-
 tab_documents = dbc.Tab(
     label = "Documents",
     label_style = {"font-size":"1.5em"}, 
@@ -220,15 +261,6 @@ tab_documents = dbc.Tab(
 # Search tab
 ###################################
 
-tab_search= dbc.Tab(
-    label = "Search",
-    label_style = {"font-size":"1.5em"}, 
-)
-
-###################################
-# Explore tab
-###################################
-
 summary_body = dbc.Container(id = "summary_body", fluid = True)
 query = dbc.Container(
     children = [
@@ -237,11 +269,7 @@ query = dbc.Container(
                 dbc.Col(html.H3("Query")),
                 dbc.Col(
                     dbc.Card(dbc.Button("Submit", id = "submit")), 
-                    width = 2
-                ),
-                dbc.Col(
-                    dbc.Card(dbc.Button("Settings", id = "settings")), 
-                    width = 2
+                    width = 3
                 ),
             ]
         ),
@@ -253,7 +281,7 @@ query = dbc.Container(
     ], 
     fluid = True
 )
-tab_explore = dbc.Tab(
+tab_search = dbc.Tab(
     label = "Search", 
     label_style = {"font-size":"1.5em"}, 
     children =[
@@ -270,7 +298,6 @@ tab_overview = dbc.Tab(
     label = "Dashboard",
     label_style = {"font-size":"1.5em"},
     children = dbc.Container(
-    #children = dbc.Col(
         [
             dbc.Row(
                 [
@@ -297,24 +324,26 @@ store_sentences = dcc.Store(id = "store_sentences")
 store_sentence_embeddings = dcc.Store(id = "store_sentence_embeddings")
 store_query_embedding= dcc.Store(id = "store_query_embedding")
 history = pd.DataFrame(
-    columns = ["paper", "sentence", "text", "relevance"]
+    columns = ["filename", "sentence", "text", "relevance"]
 ).to_json()
 store_history = dcc.Store(
     data = history, 
     id = "store_history"
 )
 store_recommendations = dcc.Store(id = "store_recommendations")
-store_scroll= html.P(0, id = "store_scroll", hidden = True)
-store_highlighted_words = html.P(
-    0, 
-    id = "store_highlighted_words", 
-    hidden = True
-)
-store_highlighted_lines = html.P(
-    0, 
-    id = "store_highlighted_lines", 
-    hidden = True
-)
+store_papers = dcc.Store(id = "store_papers")
+store_vocabulary = dcc.Store(id = "store_vocabulary")
+# store_scroll= html.P(0, id = "store_scroll", hidden = True)
+# store_highlighted_words = html.P(
+#     0, 
+#     id = "store_highlighted_words", 
+#     hidden = True
+# )
+# store_highlighted_lines = html.P(
+#     0, 
+#     id = "store_highlighted_lines", 
+#     hidden = True
+# )
 download = dcc.Download(id = "download")
 store = html.Div(
     [
@@ -323,10 +352,12 @@ store = html.Div(
         store_query_embedding,
         store_history,
         store_recommendations,
-        store_scroll,
-        store_highlighted_words,
-        store_highlighted_lines,
-        visdcc.Run_js(id = 'javascript'),
+        # store_scroll,
+        # store_highlighted_words,
+        # store_highlighted_lines,
+        store_papers,
+        store_vocabulary,
+        # visdcc.Run_js(id = 'javascript'),
         download
     ]
 )
@@ -344,8 +375,7 @@ app.layout = dbc.Container(
             [
                 tab_upload, 
                 tab_documents, 
-                # tab_search, 
-                tab_explore, 
+                tab_search, 
                 tab_history, 
                 tab_overview, 
                 tab_summary
@@ -367,14 +397,13 @@ app.layout = dbc.Container(
 def show_papers(papers, sentences):
     papers = pd.read_json(papers)
     sentences = pd.read_json(sentences)\
-    .groupby("paper")["sentence"]\
+    .groupby("filename")["sentence"]\
     .size()\
     .reset_index()
     df = papers.merge(sentences)
     output = []
     if len(df) > 0:
         rows = []
-        # header = html.Tr(
         header = html.Thead(
             [
                 html.Th(
@@ -388,18 +417,24 @@ def show_papers(papers, sentences):
             ]
         )
         rows.append(header)
-        for filename, paper, text, sentences in df.values:
+        for i, (filename, text, sentences) in enumerate(df.values):
             words = len(list(re.findall(r"\w+", text)))
             r = html.Tr(
                 [
                     html.Td(
-                        filename, 
+                        filename if len(filename) <= 30 else filename[:30] + "...", 
                         style = {"width":"20%", "overflow-wrap":"anywhere"}
                     ),
                     html.Td(text[:200] + "..."), 
-                    html.Td(f"{len(text):,}"), 
-                    html.Td(f'{words:,}'), 
-                    html.Td(sentences),
+                    html.Td(f"{len(text):,}", style = {"text-align":"right"}), 
+                    html.Td(f'{words:,}', style = {"text-align":"right"}), 
+                    html.Td(sentences, style = {"text-align":"right"}),
+                    html.Td(
+                        dbc.Button(
+                            "Delete",
+                            id = {"kind":"delete_document", "index":i}
+                        )
+                    ),
                 ]
             )
             rows.append(r)
@@ -409,8 +444,8 @@ def show_papers(papers, sentences):
 
 @app.callback(
     Output("filename", "children"),
-    Input("add_paper", "contents"),
-    State("add_paper", "filename")
+    Input("upload", "contents"),
+    State("upload", "filename")
 ) 
 def show_filename(contents, filename):
     return filename
@@ -419,23 +454,28 @@ def show_filename(contents, filename):
 @app.callback(
     Output("store_papers", "data"),
     Output("store_sentences", "data"),
-    Input("process", "n_clicks"),
-    State("add_paper", "contents"),
+    Input("add_paper", "n_clicks"),
+    Input({"kind":"delete_document", "index":ALL}, "n_clicks"),
+    State("upload", "contents"),
     State("store_papers", "data"),
     State("store_sentences", "data"),
-    State("add_paper", "filename"),
+    State("upload", "filename"),
     prevent_initial_call = True
     )
-def process_paper(clicks, contents, store_papers, store_sentences, filename):
+def add_paper(clicks, delete, contents, store_papers, store_sentences, filename):
     if store_papers and store_sentences:
         store_papers = pd.read_json(store_papers)
         store_sentences = pd.read_json(store_sentences)
     else:
-        store_papers = pd.DataFrame(columns = ["filename","paper", "text"])
+        store_papers = pd.DataFrame(columns = ["filename", "text"])
         store_sentences = pd.DataFrame(
-            columns = ["paper", "sentence", "text"]
+            columns = ["filename", "sentence", "text"]
         )
-    if contents:
+    ctx = dash.callback_context
+    trigger = ctx.triggered[0]
+    prop_id = trigger["prop_id"]
+    value = trigger["value"]
+    if prop_id == "add_paper.n_clicks" and contents:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
         file = BytesIO(decoded)
@@ -447,7 +487,6 @@ def process_paper(clicks, contents, store_papers, store_sentences, filename):
             [
                 {
                     "filename":filename,
-                    "paper":len(store_papers), 
                     "text":document
                 }
             ]
@@ -459,15 +498,27 @@ def process_paper(clicks, contents, store_papers, store_sentences, filename):
         )
         sentences_df = pd.DataFrame(
             [
-                (len(store_papers) - 1, i, s) 
+                (filename, i, s) 
                 for i, s in enumerate(sentences)
             ], 
-            columns = ["paper", "sentence", "text"]
+            columns = ["filename", "sentence", "text"]
         )
         store_sentences = pd.concat(
             (store_sentences, sentences_df), 
             ignore_index = True
         )
+    else:
+        index_kind = json.loads(prop_id.split(".")[0])
+        index = index_kind["index"]
+        kind = index_kind["kind"]
+        if kind == "delete_document" and value:
+            filename = store_papers.filename[index] 
+            store_papers = store_papers\
+                .query(f"filename != '{filename}'")\
+                .reset_index(drop = True)
+            store_sentences = store_sentences\
+                .query(f"filename != '{filename}'")\
+                .reset_index(drop = True)
     return store_papers.to_json(), store_sentences.to_json()
 
 
@@ -504,15 +555,7 @@ def update_recommendations_body(recommendations):
         recommendations = pd.read_json(recommendations).head().to_dict("records")
         summary_body = []
         header = html.Tr(
-        # header = html.Thead(
             [
-                # html.Th(
-                #     ["Estimated", html.Br(), "Relevance"], 
-                #     style = {"text-align":"center"}
-                # ),
-                # html.Th("Paper", style = {"text-align":"center"}),
-                # html.Th("Sentence", style = {"text-align":"center"}),
-                # html.Th("Text", style = {"text-align":"center"}),
                 html.Th("Text"),
                 html.Th("Relevant?", colSpan = 2, style = {"width":"10%"})
             ]
@@ -520,11 +563,8 @@ def update_recommendations_body(recommendations):
         summary_body.append(header)
         for i, r in enumerate(recommendations):
             score = html.Td(round(r["score"], 3))
-            paper = html.Td(r["paper"])
+            paper = html.Td(r["filename"][50:])
             sentence = html.Td(r["sentence"])
-            # content = html.Td(dbc.Button(r["text"], 
-            #                       id = dict(type = "recommendation", index = i), 
-            #                       color = "link"))
             content = html.Td(r["text"])
             accept = dbc.Button(
                 "✔", 
@@ -544,9 +584,6 @@ def update_recommendations_body(recommendations):
             )
             row = html.Tr(
                 [
-                    # score, 
-                    # paper, 
-                    # sentence, 
                     content, 
                     html.Td(accept), 
                     html.Td(reject)
@@ -563,7 +600,6 @@ def update_recommendations_body(recommendations):
 @app.callback(
     Output("history_body", "children"),
     Input("store_history", "data"),
-    #prevent_initial_call = True
 )
 def update_history_body(history):
     if history:
@@ -577,19 +613,13 @@ def update_history_body(history):
             ]
         )
         history_body = [header]
-        # for i, r in enumerate(reversed(history)):
         for i, r in enumerate(history):
-            paper = html.Td(r["paper"])
+            if len(r["filename"]) <= 30:
+                paper = html.Td(r["filename"])
+            else:
+                paper = html.Td(r["filename"][:30] + "...")
             sentence = html.Td(r["sentence"])
             content = html.Td(r["text"])
-            # content = html.Td(
-            #     dbc.Button(r["text"], 
-            #     id = dict(
-            #         type = "history", 
-            #         index = i
-            #     ), 
-            #     color = "link")
-            # )
             accept = dbc.Button(
                 "✔", 
                 id = dict(type = "history_accept", index = i), 
@@ -601,9 +631,11 @@ def update_history_body(history):
                 style = {"background":"firebrick"}
             )
             card_style = {"background":"lightgreen"} if r["relevance"] else {"background":"lightpink"} 
-            row = html.Tr([paper, sentence, content, html.Td(accept), html.Td(reject)], 
-                          id = dict(type = "history_card", index = i), 
-                          style = card_style)
+            row = html.Tr(
+                [paper, sentence, content, html.Td(accept), html.Td(reject)], 
+                id = dict(type = "history_card", index = i), 
+                style = card_style
+            )
             history_body.append(row)
         return  dbc.Table(history_body)
     else:
@@ -625,17 +657,12 @@ def update_history_body(history):
     prevent_initial_call = True
 )
 def update_history(*args):
-    #print("update_history")
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"]
     value = ctx.triggered[0]["value"]
-    # print(ctx.triggered[0])
-    # print(prop_id)
-    # print(value)
     index_type, attribute = prop_id.split(".")
-    # print(index_type)
     history = pd.DataFrame(
-        columns = ["paper", "sentence", "text", "relevance"]
+        columns = ["filename", "sentence", "text", "relevance"]
     )
     if index_type not in [
         "clear", 
@@ -659,7 +686,7 @@ def update_history(*args):
             else:
                 r = recommendations.to_dict("records")[index]
                 new = dict(
-                    paper = r["paper"],
+                    filename = r["filename"],
                     sentence = r["sentence"], 
                     text = r["text"], 
                     relevance = True if accept == "accept" else False
@@ -677,40 +704,106 @@ def update_history(*args):
 
 
 @app.callback(
-    Output("store_sentence_embeddings", "data"),
     Output("store_query_embedding", "data"),
     Input("submit", "n_clicks"),
-    State("store_sentences", "data"),
+    Input("store_sentence_embeddings", "data"),
     State("query", "value"),
-    prevent_initial_call = True
+    State("store_vocabulary", "data"),
+    State("embeddings_dropdown", "value")
 )
-def compute_embeddings(clicks, sentences, query):
-    if sentences:
+def compute_query_embedding(
+    clicks, 
+    sentence_embeddings, 
+    query, 
+    vocabulary, 
+    embeddings_dropdown
+):
+    query_embedding = None
+    ctx = dash.callback_context
+    trigger = ctx.triggered[0]
+    prop_id = trigger["prop_id"]
+    value = trigger["value"]
+    if prop_id == "submit.n_clicks" and value and query and vocabulary:
+        vocabulary = json.loads(vocabulary)
+        if embeddings_dropdown == "Sentence-BERT Embeddings":
+            model = SentenceTransformer(
+                'all-MiniLM-L6-v2', 
+                cache_folder = "sbert_cache",
+                device = "cpu"
+            )
+            query_embedding = model.encode(
+                [query],
+                normalize_embeddings = True,
+                batch_size = 4
+            ).tolist()
+        elif embeddings_dropdown == "Character Trigrams":
+            vectorizer = CountVectorizer(
+                analyzer = "char", 
+                ngram_range = (3, 3),
+                vocabulary = vocabulary
+            )
+            query_embedding = vectorizer.transform([query])\
+                .toarray()
+            query_embedding = normalize(query_embedding)\
+                .tolist()
+        elif embeddings_dropdown == "Word Unigrams":
+            vectorizer = CountVectorizer(
+                analyzer = "word", 
+                ngram_range = (1, 1),
+                vocabulary = vocabulary
+            )
+            query_embedding = vectorizer.transform([query])\
+                .toarray()
+            query_embedding = normalize(query_embedding)\
+                .tolist()
+        query_embedding = json.dumps(query_embedding)
+    return query_embedding
+
+
+@app.callback(
+    Output("store_sentence_embeddings", "data"),
+    Output("store_vocabulary", "data"),
+    Input("process_papers", "n_clicks"),
+    Input("store_sentences", "data"),
+    Input("embeddings_dropdown", "value")
+)
+def compute_sentence_embeddings(clicks, sentences, embeddings_dropdown):
+    sentence_embeddings = None
+    vocabulary = None
+    ctx = dash.callback_context
+    trigger = ctx.triggered[0]
+    prop_id = trigger["prop_id"]
+    value = trigger["value"]
+    if prop_id == "process_papers.n_clicks" and value and sentences:
         sentences = pd.read_json(sentences)
-        model = SentenceTransformer(
-            'all-MiniLM-L6-v2', 
-            cache_folder = "sbert_cache",
-            device = "cpu"
-        )
-        sentence_embeddings = model.encode(
-            sentences.text, 
-            normalize_embeddings = True,
-            batch_size = 4
-        ).tolist()
-        query_embedding = model.encode(
-            [query], 
-            normalize_embeddings = True
-        ).tolist()
-        #vectorizer = CountVectorizer(analyzer = "char", ngram_range = (2, 3))
-
-        #sentence_embeddings = vectorizer.fit_transform(sentences.text).toarray()
-        #sentence_embeddings = normalize(sentence_embeddings).tolist()
-
-        #query_embedding = vectorizer.transform([query]).toarray()
-        #query_embedding = normalize(query_embedding).tolist()
-        return json.dumps(sentence_embeddings), json.dumps(query_embedding)
-    else:
-        return "", ""
+        if embeddings_dropdown == "Sentence-BERT Embeddings":
+            model = SentenceTransformer(
+                'all-MiniLM-L6-v2', 
+                cache_folder = "sbert_cache",
+                device = "cpu"
+            )
+            sentence_embeddings = model.encode(
+                sentences.text, 
+                normalize_embeddings = True,
+                batch_size = 4
+            ).tolist()
+        elif embeddings_dropdown == "Character Trigrams":
+            vectorizer = CountVectorizer(analyzer = "char", ngram_range = (3, 3))
+            sentence_embeddings = vectorizer.fit_transform(sentences.text)\
+                .toarray()
+            sentence_embeddings = normalize(sentence_embeddings)\
+                .tolist()
+            vocabulary = vectorizer.vocabulary_
+        elif embeddings_dropdown == "Word Unigrams":
+            vectorizer = CountVectorizer(analyzer = "word", ngram_range = (1, 1))
+            sentence_embeddings = vectorizer.fit_transform(sentences.text)\
+                .toarray()
+            sentence_embeddings = normalize(sentence_embeddings)\
+                .tolist()
+            vocabulary = vectorizer.vocabulary_
+        sentence_embeddings = json.dumps(sentence_embeddings)
+        vocabulary = json.dumps(vocabulary)
+    return sentence_embeddings, vocabulary
 
 
 @app.callback(
@@ -719,13 +812,18 @@ def compute_embeddings(clicks, sentences, query):
     Input("store_sentence_embeddings", "data"),
     Input("store_query_embedding", "data"),
     State("store_sentences", "data"),
+    State("classifier_dropdown", "value"),
 )
 def update_recommendations(
     history, 
     sentence_embeddings, 
     query_embedding, 
-    sentences
+    sentences,
+    classifier
 ):
+    recommendations = pd.DataFrame(
+        columns = ["filename", "sentence", "text", "score"]
+    )
     if history and sentence_embeddings and query_embedding and sentences:
         history = pd.read_json(history)
         sentence_embeddings = np.array(json.loads(sentence_embeddings))
@@ -736,34 +834,14 @@ def update_recommendations(
                 sentences, 
                 history, 
                 sentence_embeddings, 
-                query_embedding
+                query_embedding,
+                classifier
             )
             recommendations = recommendations.sort_values(
                 "score", 
                 ascending = False
             )
-        else:
-            recommendations = pd.DataFrame()
-        return recommendations.to_json()
-    else:
-        return ""
-
-
-# @app.callback(
-#     Output("highlighted_words_front", "children"),
-#     Output("highlighted_lines_front", "children"),
-#     Output("reviews", "children"),
-#     Input("store_history", "data"),
-# )
-# def update_highlighted(history):
-#     history = pd.read_json(history)
-#     relevant = history.query("relevance == True")
-#     words = len(
-#         re.findall(r"\w+", " ".join(relevant.text))
-#     )
-#     lines = relevant.shape[0]
-#     reviews = history.shape[0]
-#     return f"{words:,}", f"{lines:,}", f"{reviews:,}" 
+    return recommendations.to_json()
 
 
 @app.callback(
@@ -796,7 +874,6 @@ def update_query_value(clicks, query):
     Input("store_recommendations", "data"),
     Input("store_history", "data"),
     State("store_papers", "data"),
-    prevent_initial_call = True
 )
 def update_plots(recommendations, history, papers):
     general = px.bar()
@@ -809,7 +886,6 @@ def update_plots(recommendations, history, papers):
         .drop(columns = ["text"])
 
         history = pd.read_json(history)
-        # print(history)
         total = history.relevance.size
         relevant = history.relevance.sum()
         not_relevant = total - relevant
@@ -818,28 +894,23 @@ def update_plots(recommendations, history, papers):
             x = ["Relevant", "Not Relevant", "Total"],
             color = ["Relevant", "Not Relevant", "Total"],
             y = [relevant, not_relevant, total],
-            # color = "relevance",
             title = "Sentences",
             labels = {
                 "x":"",
                 "y":"Sentences",
             },
-            # hover_data = {"x":False, "y":True, "color":False}
-            # category_orders = {
-            #     "relevance":[True, False]
-            # }       
         )
         general.update_layout(showlegend = False)
         general.update_traces(hoverinfo = "skip", hovertemplate = None)
 
         barplot = px.histogram(
             data_frame = history\
-                .groupby(["paper", "relevance"], dropna = False)\
+                .groupby(["filename", "relevance"], dropna = False)\
                 .size()\
                 .reset_index()\
                 .rename(columns = {0:"highlights"})\
-                .merge(papers, left_on = "paper", right_on = "paper")\
-                .sort_values("paper")\
+                .merge(papers, left_on = "filename", right_on = "filename")\
+                .sort_values("filename")\
                 .assign(
                     relevance = lambda df: df.relevance.map(
                         {1:True, 0:False}
@@ -858,29 +929,19 @@ def update_plots(recommendations, history, papers):
             category_orders = {
                 "relevance":[True, False]
             },
-            # hover_data = {"x":False, "y":False, "color":True}
         )
         barplot.update_layout(xaxis_title = "Sentences")
         barplot.update_traces(hoverinfo = "skip", hovertemplate = None)
 
         recommendations = pd.read_json(recommendations)\
-        .merge(papers, left_on = "paper", right_on = "paper")\
-        .sort_values("paper")\
+        .merge(papers, left_on = "filename", right_on = "filename")\
+        .sort_values("filename")\
 
         counts, bins = np.histogram(
             recommendations.score, 
             bins = np.arange(0, 1.01, 0.02)
         )
         bins = 0.5 * (bins[:-1] + bins[1:])
-
-        # histogram = px.histogram(
-        #     data_frame = recommendations, 
-        #     x = "score", 
-        #     title = "Distribution of the Recommendation Score",
-        #     labels = {"score":"Score"},
-        #     # nbins = 30,
-        #     range_x = [0, 1]
-        # )
         histogram = px.bar(
             x = bins, 
             y = counts,
@@ -891,14 +952,12 @@ def update_plots(recommendations, history, papers):
             xaxis_range = [-0.1, 1.1],
             yaxis_title = "Frequency"
         )
-
         boxplot = px.box(
             data_frame = recommendations, 
             y = "label", 
             x = "score", 
             color = "label",
             orientation = "h",
-            # hover_name = "label",
             title = "Distribution of the Recommendation Score by Document",
             labels = {"score":"Score", "label":"Document"},
             range_x = [-0.1, 1.1],
@@ -908,6 +967,7 @@ def update_plots(recommendations, history, papers):
         boxplot.update_traces(hoverinfo = "skip", hovertemplate = None)
     return general, barplot, histogram, boxplot
 
+
 @app.callback(
     Output("documents_body", "children"),
     Input("store_sentences", "data"),
@@ -915,8 +975,6 @@ def update_plots(recommendations, history, papers):
 )
 def update_documents_body(sentences, dropdown_value):
     ctx = dash.callback_context
-    # print(ctx.triggered[0])
-    # print(dropdown_value)
     if sentences:
         sentences = pd.read_json(sentences)
         documents_body = []
@@ -928,7 +986,7 @@ def update_documents_body(sentences, dropdown_value):
         )
         documents_body.append(header)
         for i, r in enumerate(
-            sentences.query(f"paper == {dropdown_value}").to_dict("records")
+            sentences.query(f"filename == '{dropdown_value}'").to_dict("records")
         ):
             row = html.Tr(
                 [
@@ -941,6 +999,7 @@ def update_documents_body(sentences, dropdown_value):
     else:
         return None
 
+
 @app.callback(
     Output("document_dropdown", "options"),
     Input("store_papers", "data"),
@@ -950,9 +1009,42 @@ def update_dropdown_options(papers):
     if papers:
         papers = pd.read_json(papers)
         heads = papers.text.map(lambda x: x[:100] + "...").to_list()
-        return [{"label":x, "value":i} for i, x in enumerate(heads)]
+        return [{"label":h, "value":f} for h, f in zip(heads, papers.filename)]
     else:
         return None
+
+
+@app.callback(
+    Output("settings_modal", "is_open"),
+    Input("settings", "n_clicks"),
+    Input("close", "n_clicks"),
+    State("settings_modal", "is_open"),
+)
+def open_settings_modal(settings, close, is_open):
+    if settings or close:
+        return not is_open
+    else:
+        return is_open
+    
+
+@app.callback(
+    Output("embeddings_dimensions", "children"),
+    Output("vocabulary_tokens", "children"),
+    Input("store_sentence_embeddings", "data"),
+    Input("store_vocabulary", "data"),
+)
+def update_embeddings_info(sentence_embeddings, vocabulary):
+    dims = None
+    tokens = None
+    if sentence_embeddings and vocabulary:
+        embeddings = np.array(json.loads(sentence_embeddings))
+        dims = str(embeddings.shape)
+        vocabulary = json.loads(vocabulary)
+        if vocabulary:
+            tokens = f"{len(vocabulary):,}"
+        else:
+            tokens = "0"
+    return dims, tokens
 
 if __name__ == '__main__':
     app.run_server(debug=True, host = "0.0.0.0")

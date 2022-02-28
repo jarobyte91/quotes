@@ -1,7 +1,8 @@
 from dash import html
 import pandas as pd
 from sklearn.svm import SVC
-# from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
 import dash_bootstrap_components as dbc
 
 
@@ -28,7 +29,13 @@ def render_document(sentences, history, highlight):
     return dbc.Table(body, bordered = True)
 
 
-def compute_scores(sentences, history, sentence_embeddings, query_embedding):
+def compute_scores(
+    sentences, 
+    history, 
+    sentence_embeddings, 
+    query_embedding,
+    classifier
+):
     relevant = history.query("relevance == True").shape[0]
     not_relevant = history.query("relevance != True").shape[0]
     recommendations_index = [i for i in sentences.index if i not in history.index]
@@ -36,8 +43,12 @@ def compute_scores(sentences, history, sentence_embeddings, query_embedding):
     recommendations = sentences.loc[recommendations_index]
     if relevant > 0 and not_relevant > 0:
         history_embeddings = sentence_embeddings[history.index]
-        classifier = SVC(probability = True)
-        # classifier = LogisticRegression()
+        if classifier == "Support Vector Machine":
+            classifier = SVC(probability = True)
+        elif classifier == "Logistic Regression":
+            classifier = LogisticRegression()
+        elif classifier == "Random Forest":
+            classifier = RandomForestClassifier()
         # X = (history_embeddings - query_embedding)**2
         # X = abs(history_embeddings - query_embedding)
         X = history_embeddings
