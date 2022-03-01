@@ -56,19 +56,19 @@ embeddings_dropdown = dcc.Dropdown(
 classifier_dropdown = dcc.Dropdown(
     options = [
         {
-            "label":"Support Vector Machine", 
-            "value":"Support Vector Machine", 
-        },
-        {
             "label":"Logistic Regression", 
             "value":"Logistic Regression", 
+        },       
+        {
+            "label":"Support Vector Machine", 
+            "value":"Support Vector Machine", 
         },
         {
             "label":"Random Forest", 
             "value":"Random Forest", 
         },
     ],
-    value = "Support Vector Machine",
+    value = "Logistic Regression",
     id = "classifier_dropdown",
     clearable = False
 )
@@ -776,14 +776,20 @@ def compute_sentence_embeddings(clicks, sentences, embeddings_dropdown):
                 batch_size = 4
             ).tolist()
         elif embeddings_dropdown == "Character Trigrams":
-            vectorizer = CountVectorizer(analyzer = "char", ngram_range = (3, 3))
+            vectorizer = CountVectorizer(
+                analyzer = "char", 
+                ngram_range = (3, 3)
+            )
             sentence_embeddings = vectorizer.fit_transform(sentences.text)\
                 .toarray()
             sentence_embeddings = normalize(sentence_embeddings)\
                 .tolist()
             vocabulary = vectorizer.vocabulary_
         elif embeddings_dropdown == "Word Unigrams":
-            vectorizer = CountVectorizer(analyzer = "word", ngram_range = (1, 1))
+            vectorizer = CountVectorizer(
+                analyzer = "word", 
+                ngram_range = (1, 1)
+            )
             sentence_embeddings = vectorizer.fit_transform(sentences.text)\
                 .toarray()
             sentence_embeddings = normalize(sentence_embeddings)\

@@ -1,1 +1,1 @@
-docker build -t requirements:latest .
+docker build --tag=requirements:latest --file=deps_Dockerfile.txt .

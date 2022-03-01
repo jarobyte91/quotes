@@ -2,9 +2,6 @@ FROM continuumio/miniconda3:latest
 RUN conda install -c conda-forge pdftotext -y
 RUN useradd quotes
 WORKDIR /home/quotes
-COPY requirements.txt ./
+COPY requirements.txt download_model.py ./
 RUN pip install -r requirements.txt
-# COPY boot.sh requirements.txt app.py wsgi.py runtime.txt Procfile ./
-# RUN pip install gunicorn
-# USER quotes
-# CMD gunicorn --bind 0.0.0.0:$PORT wsgi 
+RUN python download_model.py
