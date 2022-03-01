@@ -634,7 +634,7 @@ def update_history_body(history):
                 paper = html.Td(r["filename"])
             else:
                 paper = html.Td(r["filename"][:30] + "...")
-            sentence = html.Td(r["sentence"])
+            sentence = html.Td(r["sentence"] + 1)
             content = html.Td(r["text"])
             accept = dbc.Button(
                 "✔", 
@@ -1024,7 +1024,7 @@ def update_documents_body(sentences, dropdown_value):
         ):
             row = html.Tr(
                 [
-                    html.Td(i),
+                    html.Td(i + 1),
                     html.Td(r["text"])
                 ]
             )
