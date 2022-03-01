@@ -375,17 +375,6 @@ store_history = dcc.Store(
 store_recommendations = dcc.Store(id = "store_recommendations")
 store_papers = dcc.Store(id = "store_papers")
 store_vocabulary = dcc.Store(id = "store_vocabulary")
-# store_scroll= html.P(0, id = "store_scroll", hidden = True)
-# store_highlighted_words = html.P(
-#     0, 
-#     id = "store_highlighted_words", 
-#     hidden = True
-# )
-# store_highlighted_lines = html.P(
-#     0, 
-#     id = "store_highlighted_lines", 
-#     hidden = True
-# )
 download = dcc.Download(id = "download")
 store = html.Div(
     [
@@ -394,12 +383,8 @@ store = html.Div(
         store_query_embedding,
         store_history,
         store_recommendations,
-        # store_scroll,
-        # store_highlighted_words,
-        # store_highlighted_lines,
         store_papers,
         store_vocabulary,
-        # visdcc.Run_js(id = 'javascript'),
         download
     ]
 )
@@ -594,52 +579,10 @@ def download(clicks_txt, clicks_csv, history):
 def update_recommendations_body(recommendations):
     output = [None for i in range(5)]
     if recommendations:
-        recommendations = pd.read_json(recommendations)#.head()#.to_dict("records")
+        recommendations = pd.read_json(recommendations)
         if len(recommendations) > 5:
             output = recommendations.text.head().tolist()
     return output
-#         summary_body = []
-#         header = html.Tr(
-#             [
-#                 html.Th("Text"),
-#                 html.Th("Relevant?", colSpan = 2, style = {"width":"10%"})
-#             ]
-#         )
-#         summary_body.append(header)
-#         for i, r in enumerate(recommendations):
-#             score = html.Td(round(r["score"], 3))
-#             paper = html.Td(r["filename"][50:])
-#             sentence = html.Td(r["sentence"])
-#             content = html.Td(r["text"])
-#             accept = dbc.Button(
-#                 "✔", 
-#                 id = dict(
-#                     type = "recommendation_accept", 
-#                     index = i
-#                 ), 
-#                 style = {"background":"seagreen"}
-#             )
-#             reject = dbc.Button(
-#                 "✕", 
-#                 id = dict(
-#                     type = "recommendation_reject", 
-#                     index = i
-#                 ), 
-#                 style = {"background":"firebrick"}
-#             )
-#             row = html.Tr(
-#                 [
-#                     content, 
-#                     html.Td(accept), 
-#                     html.Td(reject)
-#                 ], 
-#                 id = dict(type = "recommendation_card", index = i), 
-#                 style = {"background":"white"}
-#             )
-#             summary_body.append(row)
-#     else:
-#         summary_body = []
-#     return dbc.Table(summary_body)
 
 
 @app.callback(
