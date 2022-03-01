@@ -16,7 +16,7 @@ from nltk.tokenize import PunktSentenceTokenizer
 import numpy as np
 from dash.dependencies import Input, Output, State, ALL
 import plotly.express as px
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import normalize
 from dash.long_callback import DiskcacheLongCallbackManager
 import diskcache
@@ -97,24 +97,15 @@ settings_modal = dbc.Modal(
 add_paper = dbc.Row(
     [
         dbc.Col(
-            dbc.Card(dbc.Button(dcc.Upload("Upload file", id = "upload"))),
-            width = 2,
-            align = "center"
+            dbc.Card(
+                dbc.Button(dcc.Upload("Upload file", id = "upload"))
+            ),
+            width = 3,
         ),
         dbc.Col(
             dbc.Card(dbc.Button("Add Paper", id = "add_paper")),
-            width = 2,
-            align = "center"
+            width = 3,
         ),
-        dbc.Col(
-            dbc.Row(
-                [
-                    "file: ",
-                    html.Div(id = "filename")
-                ],
-            ),
-            align = "center"
-        )
     ]
 )   
 tab_upload = dbc.Tab(
@@ -127,48 +118,64 @@ tab_upload = dbc.Tab(
             html.P(),
             add_paper,
             html.P(),
+            dbc.Col(
+                dbc.Row(
+                    [
+                        "file: ",
+                        html.Div(id = "filename")
+                    ],
+                ),
+            ),
+            html.P(),
             html.H3("Uploaded Papers"),
             html.Div(id = "paper_list_show"),           
             dbc.Row(
                 [
                     dbc.Col(
                         dbc.Card(
-                            dbc.Button("Process Papers", id = "process_papers")
+                            dbc.Button(
+                                "Process Papers", 
+                                id = "process_papers"
+                            )
                         ),
-                        width = 2,
+                        width = 3,
                         align = "center"
                     ),
                     dbc.Col(
                         dbc.Card(dbc.Button("Settings", id = "settings")),
-                        width = 2,
+                        width = 3,
                         align = "center"
                     ),
-                    dbc.Col(
-                        dbc.Table(
-                            [
-                                html.Tr(
-                                    [
-                                        html.Td("Embeddings Dimensions:"),
-                                        html.Td(
-                                            id = "embeddings_dimensions",
-                                            style = {"text-align":"right"}),
-                                    ],
-                                ),
-                                html.Tr(
-                                    [
-                                        html.Td("Vocabulary Tokens:"),
-                                        html.Td(
-                                            id = "vocabulary_tokens",
-                                            style = {"text-align":"right"}
-                                        )
-                                    ]
-                                )
-                            ]
-                        ),
-                        width = 4
-                    )
                 ]
             ),
+            html.P(),
+            dbc.Col(
+               dbc.Table(
+                   [
+                       html.Tr(
+                           [
+                               html.Td("Embeddings Dimensions:"),
+                               html.Td(
+                                   id = "embeddings_dimensions",
+                                   style = {"text-align":"right"}
+                               ),
+                           ],
+                           id = "embeddings_status"
+                       ),
+                       html.Tr(
+                           [
+                               html.Td("Vocabulary Tokens:"),
+                               html.Td(
+                                   id = "vocabulary_tokens",
+                                   style = {"text-align":"right"}
+                               )
+                           ],
+                           id = "vocabulary_status"
+                       )
+                   ]
+               ),
+               width = 4
+            )
         ], 
         fluid = True
     )
@@ -188,7 +195,9 @@ tab_history = dbc.Tab(
                     dbc.Col(html.H3("Query")),
                     dbc.Col(),
                     dbc.Col(
-                        dbc.Card(dbc.Button("Clear history", id = "clear")),
+                        dbc.Card(
+                            dbc.Button("Clear history", id = "clear")
+                        ),
                         width = 3
                     ),
                     dbc.Col(
@@ -224,7 +233,9 @@ tab_summary = dbc.Tab(
                 dbc.Col([html.H3("Query")], width = 3),
                 dbc.Col(),
                 dbc.Col(
-                    dbc.Card(dbc.Button("Download .txt", id = "download_txt")), 
+                    dbc.Card(
+                        dbc.Button("Download .txt", id = "download_txt")
+                    ), 
                     width = 3
                 )
             ]
@@ -267,6 +278,11 @@ query = dbc.Container(
             [
                 dbc.Col(html.H3("Query")),
                 dbc.Col(
+                    align = "center",
+                    width = 3,
+                    id = "embeddings_status_search"
+                ),
+                dbc.Col(
                     dbc.Card(dbc.Button("Submit", id = "submit")), 
                     width = 3
                 ),
@@ -289,7 +305,9 @@ header = html.Tr(
 )
 rows = []
 for i in range(5):
-    content = html.Td(html.Div(id = {"kind":"recommendation_text", "index":i}))
+    content = html.Td(
+        html.Div(id = {"kind":"recommendation_text", "index":i})
+    )
     accept = dbc.Button(
         "✔", 
         id = dict(
@@ -345,16 +363,16 @@ tab_overview = dbc.Tab(
                 [
                     dbc.Col(dcc.Graph(id = "general"), width = 6),
                     dbc.Col(dcc.Graph(id = "barplot"), width = 6),
-                ]
+                ],
             ),           
             dbc.Row(
                 [
                     dbc.Col(dcc.Graph(id = "histogram"), width = 6),
                     dbc.Col(dcc.Graph(id = "boxplot"), width = 6),
-                ]
+                ],
             ),
         ],
-        fluid = True
+        fluid = True,
     )
 )
 
@@ -453,7 +471,10 @@ def show_papers(papers, sentences):
                         style = {"width":"20%", "overflow-wrap":"anywhere"}
                     ),
                     html.Td(text[:200] + "..."), 
-                    html.Td(f"{len(text):,}", style = {"text-align":"right"}), 
+                    html.Td(
+                        f"{len(text):,}", 
+                        style = {"text-align":"right"}
+                    ), 
                     html.Td(f'{words:,}', style = {"text-align":"right"}), 
                     html.Td(sentences, style = {"text-align":"right"}),
                     html.Td(
@@ -489,7 +510,14 @@ def show_filename(contents, filename):
     State("upload", "filename"),
     prevent_initial_call = True
     )
-def add_paper(clicks, delete, contents, store_papers, store_sentences, filename):
+def add_paper(
+    clicks, 
+    delete, 
+    contents, 
+    store_papers, 
+    store_sentences, 
+    filename
+):
     if store_papers and store_sentences:
         store_papers = pd.read_json(store_papers)
         store_sentences = pd.read_json(store_sentences)
@@ -620,7 +648,13 @@ def update_history_body(history):
             )
             card_style = {"background":"lightgreen"} if r["relevance"] else {"background":"lightpink"} 
             row = html.Tr(
-                [paper, sentence, content, html.Td(accept), html.Td(reject)], 
+                [
+                    paper, 
+                    sentence, 
+                    content, 
+                    html.Td(accept), 
+                    html.Td(reject)
+                ], 
                 id = dict(type = "history_card", index = i), 
                 style = card_style
             )
@@ -776,7 +810,7 @@ def compute_sentence_embeddings(clicks, sentences, embeddings_dropdown):
                 batch_size = 4
             ).tolist()
         elif embeddings_dropdown == "Character Trigrams":
-            vectorizer = CountVectorizer(
+            vectorizer = TfidfVectorizer(
                 analyzer = "char", 
                 ngram_range = (3, 3)
             )
@@ -786,7 +820,7 @@ def compute_sentence_embeddings(clicks, sentences, embeddings_dropdown):
                 .tolist()
             vocabulary = vectorizer.vocabulary_
         elif embeddings_dropdown == "Word Unigrams":
-            vectorizer = CountVectorizer(
+            vectorizer = TfidfVectorizer(
                 analyzer = "word", 
                 ngram_range = (1, 1)
             )
@@ -870,10 +904,10 @@ def update_query_value(clicks, query):
     State("store_papers", "data"),
 )
 def update_plots(recommendations, history, papers):
-    general = px.bar()
-    barplot = px.bar()
-    histogram = px.bar()
-    boxplot = px.bar()
+    general = px.bar(height = 300)
+    barplot = px.bar(height = 300)
+    histogram = px.bar(height = 300)
+    boxplot = px.bar(height = 300)
     if papers and history and recommendations:
         papers = pd.read_json(papers)\
         .assign(label = lambda df: df.text.map(lambda x: x[:20] + "..."))\
@@ -893,6 +927,7 @@ def update_plots(recommendations, history, papers):
                 "x":"",
                 "y":"Sentences",
             },
+            height = 300
         )
         general.update_layout(showlegend = False)
         general.update_traces(hoverinfo = "skip", hovertemplate = None)
@@ -923,6 +958,7 @@ def update_plots(recommendations, history, papers):
             category_orders = {
                 "relevance":[True, False]
             },
+            height = 300
         )
         barplot.update_layout(xaxis_title = "Sentences")
         barplot.update_traces(hoverinfo = "skip", hovertemplate = None)
@@ -941,6 +977,7 @@ def update_plots(recommendations, history, papers):
             y = counts,
             title = "Distribution of the Recommendation Score",
             labels = {"x":"Score", "y":"Frequency"},
+            height = 300
         )
         histogram.update_layout(
             xaxis_range = [-0.1, 1.1],
@@ -955,7 +992,8 @@ def update_plots(recommendations, history, papers):
             title = "Distribution of the Recommendation Score by Document",
             labels = {"score":"Score", "label":"Document"},
             range_x = [-0.1, 1.1],
-            color_discrete_sequence = px.colors.qualitative.Pastel
+            color_discrete_sequence = px.colors.qualitative.Pastel,
+            height = 300
         )
         boxplot.update_layout(showlegend = False)
         boxplot.update_traces(hoverinfo = "skip", hovertemplate = None)
@@ -980,7 +1018,9 @@ def update_documents_body(sentences, dropdown_value):
         )
         documents_body.append(header)
         for i, r in enumerate(
-            sentences.query(f"filename == '{dropdown_value}'").to_dict("records")
+            sentences\
+                .query(f"filename == '{dropdown_value}'")\
+                .to_dict("records")
         ):
             row = html.Tr(
                 [
@@ -1003,7 +1043,10 @@ def update_dropdown_options(papers):
     if papers:
         papers = pd.read_json(papers)
         heads = papers.text.map(lambda x: x[:100] + "...").to_list()
-        return [{"label":h, "value":f} for h, f in zip(heads, papers.filename)]
+        return [
+            {"label":h, "value":f} 
+            for h, f in zip(heads, papers.filename)
+        ]
     else:
         return None
 
@@ -1024,21 +1067,29 @@ def open_settings_modal(settings, close, is_open):
 @app.callback(
     Output("embeddings_dimensions", "children"),
     Output("vocabulary_tokens", "children"),
+    Output("embeddings_status", "style"),
+    Output("embeddings_status_search", "children"),
+    Output("embeddings_status_search", "style"),
     Input("store_sentence_embeddings", "data"),
     Input("store_vocabulary", "data"),
 )
 def update_embeddings_info(sentence_embeddings, vocabulary):
-    dims = None
-    tokens = None
+    dims = "None"
+    tokens = "None"
+    style = {"background":"lightpink"}
+    embeddings_status_search = "Sentence Embeddings: Not Ready"
     if sentence_embeddings and vocabulary:
         embeddings = np.array(json.loads(sentence_embeddings))
-        dims = str(embeddings.shape)
+        dims = " x ".join([f"{i:,}" for i in embeddings.shape])
         vocabulary = json.loads(vocabulary)
         if vocabulary:
             tokens = f"{len(vocabulary):,}"
         else:
             tokens = "0"
-    return dims, tokens
+        style = {"background":"lightgreen"}
+        embeddings_status_search = "Sentence Embeddings: Ready"
+    return dims, tokens, style, embeddings_status_search, style
+
 
 if __name__ == '__main__':
     app.run_server(debug=True, host = "0.0.0.0")
