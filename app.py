@@ -61,12 +61,12 @@ classifier_dropdown = dcc.Dropdown(
             "value":"Logistic Regression", 
         },       
         {
-            "label":"Support Vector Machine", 
-            "value":"Support Vector Machine", 
-        },
-        {
             "label":"Random Forest", 
             "value":"Random Forest", 
+        },
+        {
+            "label":"Support Vector Machine", 
+            "value":"Support Vector Machine", 
         },
     ],
     value = "Logistic Regression",
