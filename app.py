@@ -868,7 +868,6 @@ def update_recommendations(
     if history and sentence_embeddings and query_embedding and sentences:
         history = pd.read_json(history)
         sentence_embeddings = json.loads(sentence_embeddings)
-        print(query_embedding)
         query_embedding = json.loads(query_embedding)
         if isinstance(sentence_embeddings, dict):
             sentence_embeddings = csr_matrix(
