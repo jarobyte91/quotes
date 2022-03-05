@@ -852,6 +852,7 @@ def compute_sentence_embeddings(clicks, sentences, embeddings_dropdown):
     Input("store_history", "data"),
     Input("store_sentence_embeddings", "data"),
     Input("store_query_embedding", "data"),
+    Input("classifier_dropdown", "value"),
     State("store_sentences", "data"),
     State("classifier_dropdown", "value"),
 )
@@ -859,8 +860,9 @@ def update_recommendations(
     history, 
     sentence_embeddings, 
     query_embedding, 
+    classifier,
     sentences,
-    classifier
+    classifier_state
 ):
     recommendations = pd.DataFrame(
         columns = ["filename", "sentence", "text", "score"]
