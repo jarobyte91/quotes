@@ -669,8 +669,6 @@ def update_history_body(history):
     Output("store_history", "data"),
     Input("clear", "n_clicks"),
     Input("store_sentences", "data"),
-    Input("store_query_embedding", "data"),
-    Input("store_sentence_embeddings", "data"),
     Input({"type":"recommendation_accept", "index":ALL}, "n_clicks"),
     Input({"type":"recommendation_reject", "index":ALL}, "n_clicks"),
     Input({"type":"history_accept", "index":ALL}, "n_clicks"),
