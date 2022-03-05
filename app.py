@@ -14,6 +14,7 @@ import lib
 from sentence_transformers import SentenceTransformer
 from nltk.tokenize import PunktSentenceTokenizer
 import numpy as np
+from scipy.sparse import csr_matrix
 from dash.dependencies import Input, Output, State, ALL
 import plotly.express as px
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
@@ -764,20 +765,26 @@ def compute_query_embedding(
                 ngram_range = (3, 3),
                 vocabulary = vocabulary
             )
-            query_embedding = vectorizer.transform([query])\
-                .toarray()
-            query_embedding = normalize(query_embedding)\
-                .tolist()
+            query_embedding = vectorizer.transform([query])
+            query_embedding = dict(
+                data = query_embedding.data.tolist(),
+                ind = query_embedding.indices.tolist(),
+                indptr = query_embedding.indptr.tolist(),
+                shape = query_embedding.shape
+            )
         elif embeddings_dropdown == "Word Unigrams":
             vectorizer = CountVectorizer(
                 analyzer = "word", 
                 ngram_range = (1, 1),
                 vocabulary = vocabulary
             )
-            query_embedding = vectorizer.transform([query])\
-                .toarray()
-            query_embedding = normalize(query_embedding)\
-                .tolist()
+            query_embedding = vectorizer.transform([query])
+            query_embedding = dict(
+                data = query_embedding.data.tolist(),
+                ind = query_embedding.indices.tolist(),
+                indptr = query_embedding.indptr.tolist(),
+                shape = query_embedding.shape
+            )       
         query_embedding = json.dumps(query_embedding)
     return query_embedding
 
@@ -814,20 +821,26 @@ def compute_sentence_embeddings(clicks, sentences, embeddings_dropdown):
                 analyzer = "char", 
                 ngram_range = (3, 3)
             )
-            sentence_embeddings = vectorizer.fit_transform(sentences.text)\
-                .toarray()
-            sentence_embeddings = normalize(sentence_embeddings)\
-                .tolist()
+            sentence_embeddings = vectorizer.fit_transform(sentences.text)
+            sentence_embeddings = dict(
+                data = sentence_embeddings.data.tolist(),
+                ind = sentence_embeddings.indices.tolist(),
+                indptr = sentence_embeddings.indptr.tolist(),
+                shape = sentence_embeddings.shape
+            )
             vocabulary = vectorizer.vocabulary_
         elif embeddings_dropdown == "Word Unigrams":
             vectorizer = TfidfVectorizer(
                 analyzer = "word", 
                 ngram_range = (1, 1)
             )
-            sentence_embeddings = vectorizer.fit_transform(sentences.text)\
-                .toarray()
-            sentence_embeddings = normalize(sentence_embeddings)\
-                .tolist()
+            sentence_embeddings = vectorizer.fit_transform(sentences.text)
+            sentence_embeddings = dict(
+                data = sentence_embeddings.data.tolist(),
+                ind = sentence_embeddings.indices.tolist(),
+                indptr = sentence_embeddings.indptr.tolist(),
+                shape = sentence_embeddings.shape
+            )          
             vocabulary = vectorizer.vocabulary_
         sentence_embeddings = json.dumps(sentence_embeddings)
         vocabulary = json.dumps(vocabulary)
@@ -854,8 +867,29 @@ def update_recommendations(
     )
     if history and sentence_embeddings and query_embedding and sentences:
         history = pd.read_json(history)
-        sentence_embeddings = np.array(json.loads(sentence_embeddings))
-        query_embedding = np.array(json.loads(query_embedding))
+        sentence_embeddings = json.loads(sentence_embeddings)
+        print(query_embedding)
+        query_embedding = json.loads(query_embedding)
+        if isinstance(sentence_embeddings, dict):
+            sentence_embeddings = csr_matrix(
+                (
+                    sentence_embeddings["data"],
+                    sentence_embeddings["ind"],
+                    sentence_embeddings["indptr"]
+                ),
+                shape = sentence_embeddings["shape"]
+            )
+            query_embedding = csr_matrix(
+                (
+                    query_embedding["data"],
+                    query_embedding["ind"],
+                    query_embedding["indptr"]
+                ),
+                shape = query_embedding["shape"]
+            )
+        else:
+            sentence_embeddings = np.array(sentence_embeddings)
+            query_embedding = np.array(query_embedding)
         sentences = pd.read_json(sentences)
         if len(sentences) > 0:
             recommendations = lib.compute_scores(
@@ -1079,8 +1113,19 @@ def update_embeddings_info(sentence_embeddings, vocabulary):
     style = {"background":"lightpink"}
     embeddings_status_search = "Sentence Embeddings: Not Ready"
     if sentence_embeddings and vocabulary:
-        embeddings = np.array(json.loads(sentence_embeddings))
-        dims = " x ".join([f"{i:,}" for i in embeddings.shape])
+        sentence_embeddings = json.loads(sentence_embeddings)
+        if isinstance(sentence_embeddings, dict):
+            sentence_embeddings = csr_matrix(
+                (
+                    sentence_embeddings["data"],
+                    sentence_embeddings["ind"],
+                    sentence_embeddings["indptr"]
+                ),
+                shape = sentence_embeddings["shape"]
+            )
+        else:
+            sentence_embeddings = np.array(sentence_embeddings)
+        dims = " x ".join([f"{i:,}" for i in sentence_embeddings.shape])
         vocabulary = json.loads(vocabulary)
         if vocabulary:
             tokens = f"{len(vocabulary):,}"
