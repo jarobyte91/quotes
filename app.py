@@ -402,7 +402,7 @@ store_recommendations = dcc.Store(id = "store_recommendations")
 store_papers = dcc.Store(id = "store_papers")
 store_vocabulary = dcc.Store(id = "store_vocabulary")
 download = dcc.Download(id = "download")
-store = html.Div(
+store = dcc.Loading(
     [
         store_sentences,
         store_sentence_embeddings,
@@ -412,10 +412,9 @@ store = html.Div(
         store_papers,
         store_vocabulary,
         download
-    ]
+    ],
+    type = "dot"
 )
-# loading = dcc.Loading(store, fullscreen = True)
-loading = dbc.Spinner(store, fullscreen = True)
 
 ###################################
 # Main Container 
@@ -425,8 +424,7 @@ app.layout = dbc.Container(
     fluid = True, 
     children = [
         html.H1("QuOTeS - Query-Oriented Technical Summarization"),
-        #store,
-        loading,
+        store,
         dbc.Tabs(
             [
                 tab_upload, 
