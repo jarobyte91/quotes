@@ -104,7 +104,14 @@ add_paper = dbc.Row(
             width = 3,
         ),
         dbc.Col(
-            dbc.Card(dbc.Button("Add Paper", id = "add_paper")),
+            dbc.Card(
+                dbc.Button(
+                    [
+                        "Add Paper ",
+                    ], 
+                    id = "add_paper"
+                )
+            ),
             width = 3,
         ),
     ]
@@ -407,6 +414,8 @@ store = html.Div(
         download
     ]
 )
+# loading = dcc.Loading(store, fullscreen = True)
+loading = dbc.Spinner(store, fullscreen = True)
 
 ###################################
 # Main Container 
@@ -416,7 +425,8 @@ app.layout = dbc.Container(
     fluid = True, 
     children = [
         html.H1("QuOTeS - Query-Oriented Technical Summarization"),
-        store,
+        #store,
+        loading,
         dbc.Tabs(
             [
                 tab_upload, 
