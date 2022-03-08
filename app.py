@@ -542,9 +542,12 @@ def add_paper(
     if prop_id == "add_paper.n_clicks" and contents:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
-        file = BytesIO(decoded)
-        pdf = pt.PDF(file, raw = True)
-        document = "".join(pdf).replace("-\n", "").replace("\n", " ")
+        if filename[-3:] == "pdf":
+            file = BytesIO(decoded)
+            pdf = pt.PDF(file, raw = True)
+            document = "".join(pdf).replace("-\n", "").replace("\n", " ")
+        else:
+            document = str(decoded, "utf-8")
         tokenizer = PunktSentenceTokenizer(document)
         sentences = tokenizer.tokenize(document)
         new_paper = pd.DataFrame(
@@ -617,8 +620,8 @@ def update_recommendations_body(recommendations):
     output = [None for i in range(5)]
     if recommendations:
         recommendations = pd.read_json(recommendations)
-        if len(recommendations) > 5:
-            output = recommendations.text.head().tolist()
+        for i, s in enumerate(recommendations.text.head()):
+            output[i] = s
     return output
 
 
