@@ -212,7 +212,7 @@ tab_history = dbc.Tab(
                         dbc.Card(
                             dbc.Button(
                                 "Download .csv", 
-                                id = "download_csv"
+                                id = "download_csv_button"
                             )
                         ),
                         width = 3
@@ -242,7 +242,19 @@ tab_summary = dbc.Tab(
                 dbc.Col(),
                 dbc.Col(
                     dbc.Card(
-                        dbc.Button("Download .txt", id = "download_txt")
+                        dbc.Button(
+                            "Download .txt", 
+                            id = "download_txt_button"
+                        )
+                    ), 
+                    width = 3
+                ),
+                dbc.Col(
+                    dbc.Card(
+                        dbc.Button(
+                            "Download .json", 
+                            id = "download_json_button"
+                        )
                     ), 
                     width = 3
                 )
@@ -401,7 +413,9 @@ store_history = dcc.Store(
 store_recommendations = dcc.Store(id = "store_recommendations")
 store_papers = dcc.Store(id = "store_papers")
 store_vocabulary = dcc.Store(id = "store_vocabulary")
-download = dcc.Download(id = "download")
+download_csv = dcc.Download(id = "download_csv")
+download_txt = dcc.Download(id = "download_txt")
+download_json = dcc.Download(id = "download_json")
 store = dcc.Loading(
     [
         store_sentences,
@@ -411,7 +425,9 @@ store = dcc.Loading(
         store_recommendations,
         store_papers,
         store_vocabulary,
-        download
+        download_csv,
+        download_txt,
+        download_json
     ],
     type = "dot"
 )
@@ -590,26 +606,62 @@ def add_paper(
 
 
 @app.callback(
-    Output("download", "data"),
-    Input("download_txt", "n_clicks"),
-    Input("download_csv", "n_clicks"),
+    Output("download_txt", "data"),
+    Input("download_txt_button", "n_clicks"),
     State("store_history", "data"),
     prevent_initial_call = True
 )
-def download(clicks_txt, clicks_csv, history):
+def download_txt(clicks, history):
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"].split(".")[0]
     content = ""
     filename = "empty"
     if history:
         history = pd.read_json(history)
-        if prop_id == "download_txt":
-            content = "\n\n".join(history.query("relevance == True").text)
-            filename = "summary.txt"
-        elif prop_id == "download_csv":
-            content = history.to_csv()
-            filename = "reviews.csv"
+        content = "\n\n".join(history.query("relevance == True").text)
+        filename = "summary.txt"
     return dict(content = content, filename = filename) 
+
+
+@app.callback(
+    Output("download_csv", "data"),
+    Input("download_csv_button", "n_clicks"),
+    State("store_history", "data"),
+    prevent_initial_call = True
+)
+def download_csv(clicks, history):
+    ctx = dash.callback_context
+    prop_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    content = ""
+    filename = "empty"
+    if history:
+        history = pd.read_json(history)
+        content = history.to_csv()
+        filename = "reviews.csv"
+    return dict(content = content, filename = filename) 
+
+
+@app.callback(
+    Output("download_json", "data"),
+    Input("download_json_button", "n_clicks"),
+    State("store_history", "data"),
+    State("store_sentences", "data"),
+    State("query", "value"),
+    prevent_initial_call = True
+)
+def download_json(clicks, history, sentences, query):
+    ctx = dash.callback_context
+    prop_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    content = ""
+    filename = "empty"
+    if history and sentences and query:
+        filename = "results.json"
+        content = dict(
+            sentences = json.loads(sentences),
+            query = query,
+            history = history
+        )
+    return dict(content = json.dumps(content), filename = filename) 
 
 
 @app.callback(
@@ -1149,4 +1201,4 @@ def update_embeddings_info(sentence_embeddings, vocabulary):
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host = "0.0.0.0")
+    app.run_server()
