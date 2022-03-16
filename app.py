@@ -527,6 +527,7 @@ def show_filename(contents, filename):
 @app.callback(
     Output("store_papers", "data"),
     Output("store_sentences", "data"),
+    Output("query", "value"),
     Input("add_paper", "n_clicks"),
     Input({"kind":"delete_document", "index":ALL}, "n_clicks"),
     State("upload", "contents"),
@@ -555,6 +556,7 @@ def add_paper(
     trigger = ctx.triggered[0]
     prop_id = trigger["prop_id"]
     value = trigger["value"]
+    query = ""
     if prop_id == "add_paper.n_clicks" and contents:
         content_type, content_string = contents.split(',')
         decoded = base64.b64decode(content_string)
@@ -562,10 +564,17 @@ def add_paper(
             file = BytesIO(decoded)
             pdf = pt.PDF(file, raw = True)
             document = "".join(pdf).replace("-\n", "").replace("\n", " ")
-        else:
+            tokenizer = PunktSentenceTokenizer(document)
+            sentences = tokenizer.tokenize(document)
+        elif filename[-3:] == "txt":
             document = str(decoded, "utf-8")
-        tokenizer = PunktSentenceTokenizer(document)
-        sentences = tokenizer.tokenize(document)
+            tokenizer = PunktSentenceTokenizer(document)
+            sentences = tokenizer.tokenize(document)
+        else:
+            info = json.loads(decoded)
+            document = info["document"]
+            query = info["query"]
+            sentences = document.split("\n\n")
         new_paper = pd.DataFrame(
             [
                 {
@@ -602,7 +611,7 @@ def add_paper(
             store_sentences = store_sentences\
                 .query(f"filename != '{filename}'")\
                 .reset_index(drop = True)
-    return store_papers.to_json(), store_sentences.to_json()
+    return store_papers.to_json(), store_sentences.to_json(), query
 
 
 @app.callback(
