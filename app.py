@@ -339,7 +339,7 @@ query = dbc.Container(
 header = html.Tr(
     [
         html.Th("Text"),
-        html.Th("Relevant?", style = {"width":"10%"})
+        html.Th("Relevant?", style = {"width":"5%"})
     ]
 )
 rows = []
@@ -347,21 +347,39 @@ for i in range(5):
     content = html.Td(
         html.Div(id = {"kind":"recommendation_text", "index":i})
     )
-    accept = dbc.Button(
-        "✔", 
-        id = dict(
-            type = "recommendation_accept", 
-            index = i
-        ), 
-        style = {"background":"seagreen"}
+    accept = dbc.Card(
+        dbc.Button(
+            "✔", 
+            id = dict(
+                type = "recommendation_accept", 
+                index = i
+            ), 
+            style = {"background":"seagreen"}
+        )
     )
     row = html.Tr(
         [
             content, 
-            html.Td(accept, style = {"text-align":"center"}), 
+            html.Td(accept), 
         ], 
     )
     rows.append(row)
+rows.append(
+    html.Tr(
+        [
+            html.Td(),
+            html.Td(
+                dbc.Card(
+                   dbc.Button(
+                       "None",
+                       style = {"background":"firebrick"},
+                       id = "button_none"
+                   )
+                )
+            )
+       ]
+    )
+)
 recommendations_body = dbc.Container(
     [
        dbc.Row(
@@ -377,20 +395,6 @@ recommendations_body = dbc.Container(
             ]
         ),
         dbc.Table([header] + rows),
-        dbc.Row(
-            [
-                dbc.Col(width = 10),
-                dbc.Col(
-                    dbc.Card(
-                        dbc.Button(
-                            "None",
-                            style = {"background":"firebrick"},
-                            id = "button_none"
-                        )
-                    )
-                ),
-            ]
-        )
     ],
     fluid = True
 )
@@ -812,7 +816,6 @@ def update_history_body(history):
 def update_history(*args):
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"]
-    print("prop_id", prop_id)
     value = ctx.triggered[0]["value"]
     index_type, attribute = prop_id.split(".")
     history = pd.DataFrame(
@@ -831,7 +834,6 @@ def update_history(*args):
         subtype, accept = type.split("_")
         history = args[-2]
         recommendations = args[-1]
-        print("subtype", subtype)
         if value is None:
             return history
         else:
