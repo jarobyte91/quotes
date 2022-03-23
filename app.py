@@ -21,6 +21,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import normalize
 from dash.long_callback import DiskcacheLongCallbackManager
 import diskcache
+from itertools import takewhile
 
 server = Flask(__name__)
 cache = diskcache.Cache("./cache")
@@ -338,7 +339,7 @@ query = dbc.Container(
 header = html.Tr(
     [
         html.Th("Text"),
-        html.Th("Relevant?", colSpan = 2, style = {"width":"10%"})
+        html.Th("Relevant?", style = {"width":"10%"})
     ]
 )
 rows = []
@@ -354,26 +355,42 @@ for i in range(5):
         ), 
         style = {"background":"seagreen"}
     )
-    reject = dbc.Button(
-        "✕", 
-        id = dict(
-            type = "recommendation_reject", 
-            index = i
-        ), 
-        style = {"background":"firebrick"}
-    )
     row = html.Tr(
         [
             content, 
-            html.Td(accept), 
-            html.Td(reject)
+            html.Td(accept, style = {"text-align":"center"}), 
         ], 
     )
     rows.append(row)
 recommendations_body = dbc.Container(
     [
-        html.H3("Suggested Sentences"),
-        dbc.Table([header] + rows)
+       dbc.Row(
+            [
+                dbc.Col(html.H3("Suggested Sentences")),
+                dbc.Col(
+                    dbc.Container(
+                        id = "consecutive_strikes"
+                    ),
+                    align = "center",
+                    width = 3,
+                ),
+            ]
+        ),
+        dbc.Table([header] + rows),
+        dbc.Row(
+            [
+                dbc.Col(width = 10),
+                dbc.Col(
+                    dbc.Card(
+                        dbc.Button(
+                            "None",
+                            style = {"background":"firebrick"},
+                            id = "button_none"
+                        )
+                    )
+                ),
+            ]
+        )
     ],
     fluid = True
 )
@@ -694,15 +711,37 @@ def download_json(clicks, history, sentences, query):
 
 @app.callback(
     Output({"kind":"recommendation_text", "index":ALL}, "children"),
+    Output("consecutive_strikes", "children"),
+    Output("consecutive_strikes", "style"),
     Input("store_recommendations", "data"),
+    State("store_history", "data"),
 )
-def update_recommendations_body(recommendations):
+def update_recommendations_body(recommendations, history):
     output = [None for i in range(5)]
+    string = ""
+    style = None
     if recommendations:
         recommendations = pd.read_json(recommendations)
         for i, s in enumerate(recommendations.text.head()):
             output[i] = s
-    return output
+        if history: 
+            history = pd.read_json(history)
+            strikes = list(
+                takewhile(
+                    lambda x: not x[1],
+                    enumerate(reversed(history.relevance.tolist()), 1)
+                )
+            )
+            if len(strikes) > 0:
+                turns = strikes[-1][0] // 5
+            else:
+                turns = 0
+            string = f"Turns since last relevant: {turns}"
+            if turns < 3:
+                style = {"background":"lightgreen"}
+            else:
+                style = {"background":"lightpink"}
+    return output, string, style
 
 
 @app.callback(
@@ -763,9 +802,9 @@ def update_history_body(history):
     Input("store_query_embedding", "data"),
     Input("store_sentence_embeddings", "data"),
     Input({"type":"recommendation_accept", "index":ALL}, "n_clicks"),
-    Input({"type":"recommendation_reject", "index":ALL}, "n_clicks"),
     Input({"type":"history_accept", "index":ALL}, "n_clicks"),
     Input({"type":"history_reject", "index":ALL}, "n_clicks"),
+    Input("button_none", "n_clicks"),
     State("store_history", "data"),
     State("store_recommendations", "data"),
     prevent_initial_call = True
@@ -773,6 +812,7 @@ def update_history_body(history):
 def update_history(*args):
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"]
+    print("prop_id", prop_id)
     value = ctx.triggered[0]["value"]
     index_type, attribute = prop_id.split(".")
     history = pd.DataFrame(
@@ -782,7 +822,8 @@ def update_history(*args):
         "clear", 
         "store_sentences",
         "store_query_embedding",
-        "store_sentence_embeddings"
+        "store_sentence_embeddings",
+        "button_none"
     ]:
         index_type = json.loads(index_type)
         index = index_type["index"]
@@ -790,6 +831,7 @@ def update_history(*args):
         subtype, accept = type.split("_")
         history = args[-2]
         recommendations = args[-1]
+        print("subtype", subtype)
         if value is None:
             return history
         else:
@@ -814,6 +856,20 @@ def update_history(*args):
                         )
                     )
                 )
+    elif index_type == "button_none":
+        history = args[-2]
+        recommendations = args[-1]
+        recommendations = pd.read_json(recommendations)
+        history = pd.read_json(history)
+        new = recommendations[["filename", "sentence", "text"]].head()\
+        .assign(relevance = False)\
+        .set_index(recommendations.index[:5])
+        history = pd.concat(
+            (
+                history,
+                new
+            ),
+        )
     return history.to_json()
 
 
