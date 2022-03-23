@@ -92,6 +92,24 @@ settings_modal = dbc.Modal(
 )
 
 ###################################
+# Tutorial tab
+###################################
+
+tab_tutorial = dbc.Tab(
+    label = "Tutorial",
+    id = "tab_tutorial",
+    # # label_style = {"font-size":"1.5em"},
+    children = dbc.Container(
+        html.Iframe(
+            src = "https://www.youtube.com/embed/67Y-A1e8K6U",
+            height = 315,
+            width = 560
+        ),
+        fluid = True
+    )
+)
+
+###################################
 # Upload tab
 ###################################
 
@@ -119,7 +137,7 @@ add_paper = dbc.Row(
 tab_upload = dbc.Tab(
     label = "Upload", 
     id = "tab_upload", 
-    label_style = {"font-size":"1.5em"},
+    # label_style = {"font-size":"1.5em"},
     children = dbc.Container(
         [
             settings_modal,
@@ -195,7 +213,7 @@ tab_upload = dbc.Tab(
 
 tab_history = dbc.Tab(
     label = "History", 
-    label_style = {"font-size":"1.5em"},
+    # label_style = {"font-size":"1.5em"},
     children = dbc.Container(
         [
             dbc.Row(
@@ -233,7 +251,7 @@ tab_history = dbc.Tab(
 
 tab_summary = dbc.Tab(
     label = "Summary",
-    label_style = {"font-size":"1.5em"},
+    # label_style = {"font-size":"1.5em"},
     children = dbc.Container(
     [
         dbc.Row(
@@ -277,7 +295,7 @@ dropdown = dcc.Dropdown(
 )
 tab_documents = dbc.Tab(
     label = "Documents",
-    label_style = {"font-size":"1.5em"}, 
+    # label_style = {"font-size":"1.5em"}, 
     children = dbc.Container(
         fluid = True,
         children = [
@@ -363,7 +381,7 @@ recommendations_body = dbc.Container(
 
 tab_search = dbc.Tab(
     label = "Search", 
-    label_style = {"font-size":"1.5em"}, 
+    # label_style = {"font-size":"1.5em"}, 
     children =[
         query,
         recommendations_body,
@@ -376,7 +394,7 @@ tab_search = dbc.Tab(
 
 tab_overview = dbc.Tab(
     label = "Dashboard",
-    label_style = {"font-size":"1.5em"},
+    # label_style = {"font-size":"1.5em"},
     children = dbc.Container(
         [
             dbc.Row(
@@ -443,6 +461,7 @@ app.layout = dbc.Container(
         store,
         dbc.Tabs(
             [
+                tab_tutorial, 
                 tab_upload, 
                 tab_documents, 
                 tab_search, 
