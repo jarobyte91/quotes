@@ -50,7 +50,8 @@ embeddings_dropdown = dcc.Dropdown(
             "value":"Sentence-BERT Embeddings"
         },
     ],
-    value = "Word Unigrams",
+    # value = "Word Unigrams",
+    value = "Character Trigrams",
     id = "embeddings_dropdown",
     clearable = False
 )
