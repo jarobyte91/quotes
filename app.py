@@ -99,6 +99,7 @@ settings_modal = dbc.Modal(
 tab_tutorial = dbc.Tab(
     label = "Tutorial",
     id = "tab_tutorial",
+    disabled = True,
     # # label_style = {"font-size":"1.5em"},
     children = dbc.Container(
         html.Iframe(
@@ -169,7 +170,13 @@ tab_upload = dbc.Tab(
                         align = "center"
                     ),
                     dbc.Col(
-                        dbc.Card(dbc.Button("Settings", id = "settings")),
+                        dbc.Card(
+                            dbc.Button(
+                                "Settings", 
+                                id = "settings", 
+                                disabled = True
+                            )
+                        ),
                         width = 3,
                         align = "center"
                     ),
@@ -489,7 +496,8 @@ app.layout = dbc.Container(
                 tab_history, 
                 tab_overview, 
                 tab_summary
-            ]
+            ],
+            active_tab = "tab-1"
         ),
     ]
 )
