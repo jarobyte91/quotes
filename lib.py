@@ -42,7 +42,7 @@ def compute_scores(
     recommendations_index = [i for i in sentences.index if i not in history.index]
     recommendations_embeddings = sentence_embeddings[recommendations_index]
     recommendations = sentences.loc[recommendations_index]
-    if relevant > 0 and not_relevant > 0:
+    if relevant > 0 and not_relevant > 0 and recommendations.shape[0] > 0:
         history_embeddings = sentence_embeddings[history.index]
         if classifier == "Support Vector Machine":
             classifier = SVC(probability = True)

@@ -888,7 +888,7 @@ def update_history(*args):
     Output("store_query_embedding", "data"),
     Input("submit", "n_clicks"),
     Input("store_sentence_embeddings", "data"),
-    State("query", "value"),
+    Input("query", "value"),
     State("store_vocabulary", "data"),
     State("embeddings_dropdown", "value")
 )
@@ -1296,4 +1296,5 @@ def update_embeddings_info(sentence_embeddings, vocabulary):
 
 
 if __name__ == '__main__':
+    # app.run_server(debug = True, host = "0.0.0.0", port = 37639)
     app.run_server()
