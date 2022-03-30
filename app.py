@@ -22,6 +22,7 @@ from sklearn.preprocessing import normalize
 from dash.long_callback import DiskcacheLongCallbackManager
 import diskcache
 from itertools import takewhile
+import chardet
 
 server = Flask(__name__)
 cache = diskcache.Cache("./cache")
@@ -618,7 +619,8 @@ def add_paper(
             tokenizer = PunktSentenceTokenizer(document)
             sentences = tokenizer.tokenize(document)
         elif filename[-3:] == "txt":
-            document = str(decoded, "utf-8")
+            enc = chardet.detect(decoded)["encoding"]
+            document = str(decoded, encoding = enc, errors = "replace")
             tokenizer = PunktSentenceTokenizer(document)
             sentences = tokenizer.tokenize(document)
         else:
@@ -890,7 +892,7 @@ def update_history(*args):
     Output("store_query_embedding", "data"),
     Input("submit", "n_clicks"),
     Input("store_sentence_embeddings", "data"),
-    Input("query", "value"),
+    State("query", "value"),
     State("store_vocabulary", "data"),
     State("embeddings_dropdown", "value")
 )
@@ -1082,7 +1084,7 @@ def update_accepted_sentences(history):
     Output("reviews_query", "children"),
     Output("summary_query", "children"),
     Input("submit", "n_clicks"),
-    Input("query", "value"),
+    State("query", "value"),
     prevent_initial_call = True
 )
 def update_query_value(clicks, query):
