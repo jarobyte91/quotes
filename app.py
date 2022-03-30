@@ -463,7 +463,7 @@ store_vocabulary = dcc.Store(id = "store_vocabulary")
 download_csv = dcc.Download(id = "download_csv")
 download_txt = dcc.Download(id = "download_txt")
 download_json = dcc.Download(id = "download_json")
-store = dcc.Loading(
+store = dbc.Spinner(
     [
         store_sentences,
         store_sentence_embeddings,
@@ -476,7 +476,9 @@ store = dcc.Loading(
         download_txt,
         download_json
     ],
-    type = "dot"
+    fullscreen = True,
+    fullscreen_style = {"opacity":0.5},
+    spinner_style={"width": "10rem", "height": "10rem"}
 )
 
 ###################################
