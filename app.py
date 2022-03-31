@@ -185,32 +185,34 @@ tab_upload = dbc.Tab(
                 ]
             ),
             html.P(),
-            dbc.Col(
-               dbc.Table(
-                   [
-                       html.Tr(
-                           [
-                               html.Td("Embeddings Dimensions:"),
-                               html.Td(
-                                   id = "embeddings_dimensions",
-                                   style = {"text-align":"right"}
-                               ),
-                           ],
-                           id = "embeddings_status"
-                       ),
-                       html.Tr(
-                           [
-                               html.Td("Vocabulary Tokens:"),
-                               html.Td(
-                                   id = "vocabulary_tokens",
-                                   style = {"text-align":"right"}
-                               )
-                           ],
-                           id = "vocabulary_status"
-                       )
-                   ]
-               ),
-               width = 4
+            dbc.Row(
+                dbc.Col(
+                    dbc.Table(
+                        [
+                            html.Tr(
+                                [
+                                    html.Td("Embeddings Dimensions:"),
+                                    html.Td(
+                                        id = "embeddings_dimensions",
+                                        style = {"text-align":"right"}
+                                    ),
+                                ],
+                                id = "embeddings_status"
+                            ),
+                            html.Tr(
+                                [
+                                    html.Td("Vocabulary Tokens:"),
+                                    html.Td(
+                                        id = "vocabulary_tokens",
+                                        style = {"text-align":"right"}
+                                    )
+                                ],
+                                id = "vocabulary_status"
+                            )
+                        ]
+                    ),
+                    width = 3
+                )
             )
         ], 
         fluid = True
