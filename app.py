@@ -322,6 +322,9 @@ tab_documents = dbc.Tab(
 # Search tab
 ###################################
 
+# number of sentences presented to the user
+candidates = 5
+
 query = dbc.Container(
     children = [
         dbc.Row(
@@ -350,11 +353,15 @@ query = dbc.Container(
 header = html.Tr(
     [
         html.Th("Text"),
-        html.Th("Relevant?", style = {"width":"5%"})
+        html.Th(
+            "Relevant?",
+            # style = {"width":"10%"}
+            style = {"width":"7.5%"}
+        )
     ]
 )
 rows = []
-for i in range(5):
+for i in range(candidates):
     content = html.Td(
         html.Div(id = {"kind":"recommendation_text", "index":i})
     )
@@ -368,10 +375,23 @@ for i in range(5):
             style = {"background":"seagreen"}
         )
     )
+    radio = dbc.RadioItems(
+        id = dict(
+            type = "radio_button",
+            index = i
+        ),
+        options = [
+            {"label":"✔", "value":True},
+            {"label":"⨯", "value":False},
+        ],
+        inline = True
+    )
     row = html.Tr(
         [
             content, 
-            html.Td(accept), 
+            #html.Td(accept), 
+            html.Td(radio), 
+            # html.Td([accept, radio]), 
         ], 
     )
     rows.append(row)
@@ -380,13 +400,22 @@ rows.append(
         [
             html.Td(),
             html.Td(
-                dbc.Card(
-                   dbc.Button(
-                       "None",
-                       style = {"background":"firebrick"},
-                       id = "button_none"
-                   )
-                )
+                [
+                    # dbc.Card(
+                    #     dbc.Button(
+                    #         "None",
+                    #         style = {"background":"firebrick"},
+                    #         id = "button_none"
+                    #     )
+                    # ),
+                    dbc.Card(
+                        dbc.Button(
+                            "Submit Labels",
+                            # style = {"background":"firebrick"},
+                            id = "button_submit_labels"
+                        )
+                    ),
+                ]
             )
        ]
     )
@@ -421,10 +450,10 @@ tab_search = dbc.Tab(
 )
 
 ###################################
-# Overview tab
+# Dashboard tab
 ###################################
 
-tab_overview = dbc.Tab(
+tab_dashboard = dbc.Tab(
     label = "Dashboard",
     # label_style = {"font-size":"1.5em"},
     children = dbc.Container(
@@ -500,7 +529,7 @@ app.layout = dbc.Container(
                 tab_documents, 
                 tab_search, 
                 tab_history, 
-                tab_overview, 
+                tab_dashboard, 
                 tab_summary
             ],
             active_tab = "tab-1"
@@ -736,12 +765,12 @@ def download_json(clicks, history, sentences, query):
     State("store_history", "data"),
 )
 def update_recommendations_body(recommendations, history):
-    output = [None for i in range(5)]
+    output = [None for i in range(candidates)]
     string = ""
     style = None
     if recommendations:
         recommendations = pd.read_json(recommendations)
-        for i, s in enumerate(recommendations.text.head()):
+        for i, s in enumerate(recommendations.text.head(candidates)):
             output[i] = s
         if history: 
             history = pd.read_json(history)
@@ -752,7 +781,7 @@ def update_recommendations_body(recommendations, history):
                 )
             )
             if len(strikes) > 0:
-                turns = strikes[-1][0] // 5
+                turns = strikes[-1][0] // candidates
             else:
                 turns = 0
             string = f"Turns since last relevant: {turns}"
@@ -820,10 +849,12 @@ def update_history_body(history):
     Input("store_sentences", "data"),
     Input("store_query_embedding", "data"),
     Input("store_sentence_embeddings", "data"),
-    Input({"type":"recommendation_accept", "index":ALL}, "n_clicks"),
+    #Input({"type":"recommendation_accept", "index":ALL}, "n_clicks"),
     Input({"type":"history_accept", "index":ALL}, "n_clicks"),
     Input({"type":"history_reject", "index":ALL}, "n_clicks"),
-    Input("button_none", "n_clicks"),
+    #Input("button_none", "n_clicks"),
+    Input("button_submit_labels", "n_clicks"),
+    State({"type":"radio_button", "index":ALL}, "value"),
     State("store_history", "data"),
     State("store_recommendations", "data"),
     prevent_initial_call = True
@@ -841,7 +872,8 @@ def update_history(*args):
         "store_sentences",
         "store_query_embedding",
         "store_sentence_embeddings",
-        "button_none"
+        "button_none",
+        "button_submit_labels"
     ]:
         index_type = json.loads(index_type)
         index = index_type["index"]
@@ -878,9 +910,26 @@ def update_history(*args):
         recommendations = args[-1]
         recommendations = pd.read_json(recommendations)
         history = pd.read_json(history)
-        new = recommendations[["filename", "sentence", "text"]].head()\
+        new = recommendations[["filename", "sentence", "text"]].head(candidates)\
         .assign(relevance = False)\
-        .set_index(recommendations.index[:5])
+        .set_index(recommendations.index[:candidates])
+        history = pd.concat(
+            (
+                history,
+                new
+            ),
+        )
+    elif index_type == "button_submit_labels":
+        radio_values = args[-3]
+        # print("radio_values", radio_values)
+        history = args[-2]
+        recommendations = args[-1]
+        recommendations = pd.read_json(recommendations)
+        history = pd.read_json(history)
+        new = recommendations[["filename", "sentence", "text"]].head(candidates)\
+        .assign(relevance = [x if x is not None else pd.NA for x in radio_values])\
+        .set_index(recommendations.index[:candidates])\
+        .dropna()
         history = pd.concat(
             (
                 history,
@@ -1312,7 +1361,13 @@ def update_embeddings_info(sentence_embeddings, vocabulary):
         embeddings_status_search = "Sentence Embeddings: Ready"
     return dims, tokens, style, embeddings_status_search, style
 
+@app.callback(
+    Output({"type":"radio_button", "index":ALL}, "value"),
+    Input("store_history", "data")
+)
+def reset_radio_buttons(history):
+    return [None for i in range(candidates)]
 
 if __name__ == '__main__':
-    app.run_server(debug = True, host = "0.0.0.0", port = 37639)
-    #app.run_server()
+    #app.run_server(debug = True, host = "0.0.0.0", port = 37639)
+    app.run_server()
