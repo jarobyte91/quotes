@@ -1131,19 +1131,20 @@ def update_plots(recommendations, history, papers):
         general.update_layout(showlegend = False)
         general.update_traces(hoverinfo = "skip", hovertemplate = None)
 
+        bars = history\
+        .assign(relevance = lambda df: df.relevance.map(bool))\
+        .groupby(
+            ["filename", "relevance"], 
+            dropna = False
+        )\
+        .size()\
+        .reset_index()\
+        .rename(columns = {0:"highlights"})\
+        .merge(papers, left_on = "filename", right_on = "filename")\
+        .sort_values("filename")\
+
         barplot = px.histogram(
-            data_frame = history\
-                .groupby(["filename", "relevance"], dropna = False)\
-                .size()\
-                .reset_index()\
-                .rename(columns = {0:"highlights"})\
-                .merge(papers, left_on = "filename", right_on = "filename")\
-                .sort_values("filename")\
-                .assign(
-                    relevance = lambda df: df.relevance.map(
-                        {1:True, 0:False}
-                    )
-                ),
+            data_frame = bars ,
             x = "highlights", 
             y = "label", 
             color = "relevance", 
@@ -1203,11 +1204,15 @@ def update_plots(recommendations, history, papers):
     Output("documents_body", "children"),
     Input("store_sentences", "data"),
     Input("document_dropdown", "value"),
+    Input("store_history", "data"),
 )
-def update_documents_body(sentences, dropdown_value):
+def update_documents_body(sentences, dropdown_value, history):
     ctx = dash.callback_context
-    if sentences:
+    if sentences and history:
         sentences = pd.read_json(sentences)
+        history = pd.read_json(history)
+        positive = history.query("relevance == True").sentence.tolist()
+        negative = history.query("relevance == False").sentence.tolist()
         documents_body = []
         header = html.Thead(
             [
@@ -1221,11 +1226,18 @@ def update_documents_body(sentences, dropdown_value):
                 .query(f"filename == '{dropdown_value}'")\
                 .to_dict("records")
         ):
+            if i in positive:
+                style = {"background":"lightgreen"}
+            elif i in negative:
+                style = {"background":"lightpink"}
+            else: 
+                style = {"background":"white"}
             row = html.Tr(
                 [
                     html.Td(i + 1),
                     html.Td(r["text"])
-                ]
+                ],
+                style = style
             )
             documents_body.append(row)
         return dbc.Table(documents_body)
@@ -1302,5 +1314,5 @@ def update_embeddings_info(sentence_embeddings, vocabulary):
 
 
 if __name__ == '__main__':
-    # app.run_server(debug = True, host = "0.0.0.0", port = 37639)
-    app.run_server()
+    app.run_server(debug = True, host = "0.0.0.0", port = 37639)
+    #app.run_server()
