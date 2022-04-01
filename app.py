@@ -1203,11 +1203,15 @@ def update_plots(recommendations, history, papers):
     Output("documents_body", "children"),
     Input("store_sentences", "data"),
     Input("document_dropdown", "value"),
+    Input("store_history", "data"),
 )
-def update_documents_body(sentences, dropdown_value):
+def update_documents_body(sentences, dropdown_value, history):
     ctx = dash.callback_context
-    if sentences:
+    if sentences and history:
         sentences = pd.read_json(sentences)
+        history = pd.read_json(history)
+        positive = history.query("relevance == True").sentence.tolist()
+        negative = history.query("relevance == False").sentence.tolist()
         documents_body = []
         header = html.Thead(
             [
@@ -1221,11 +1225,18 @@ def update_documents_body(sentences, dropdown_value):
                 .query(f"filename == '{dropdown_value}'")\
                 .to_dict("records")
         ):
+            if i in positive:
+                style = {"background":"lightgreen"}
+            elif i in negative:
+                style = {"background":"lightpink"}
+            else: 
+                style = {"background":"white"}
             row = html.Tr(
                 [
                     html.Td(i + 1),
                     html.Td(r["text"])
-                ]
+                ],
+                style = style
             )
             documents_body.append(row)
         return dbc.Table(documents_body)
