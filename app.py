@@ -260,7 +260,8 @@ def update_recommendations_body(recommendations, history):
                     html.Td(
                         s, 
                         id = dict(kind = "recommendation_text", index = i)
-                    )
+                    ),
+                    style = dict(background = "lightpink")
                 )
             )
         if history: 
@@ -846,7 +847,7 @@ def update_recommendation_colors(clicks):
     prop_id = json.loads(ctx["prop_id"].split(".")[0])
     index = prop_id["index"]
     if clicks:
-        return {"background":"lightgreen"} if (clicks % 2) == 1 else {"background":"white"}
+        return {"background":"lightgreen"} if (clicks % 2) == 1 else {"background":"lightpink"}
 
 if __name__ == '__main__':
     app.run_server(debug = True, host = "0.0.0.0", port = 37639)
