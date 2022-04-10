@@ -331,7 +331,7 @@ def update_history_body(history):
     Input("store_sentence_embeddings", "data"),
     Input("button_submit_labels", "n_clicks"),
     Input({"kind":"history_card", "index":ALL}, "n_clicks"),
-    Input({"kind":"document_sentence", "index":ALL}, "n_clicks"),
+    # Input({"kind":"document_sentence", "index":ALL}, "n_clicks"),
     State({"kind":"recommendation_text", "index":ALL}, "style"),
     State("store_history", "data"),
     State("store_recommendations", "data"),
@@ -345,7 +345,7 @@ def update_history(
     store_sentence_embeddings,
     button_submit_labels,
     history_card_clicks,
-    document_sentence_clicks,
+    # document_sentence_clicks,
     recommendation_text_styles,
     store_history,
     store_recommendations,
@@ -358,7 +358,12 @@ def update_history(
     history = pd.DataFrame(
         columns = ["filename", "sentence", "text", "relevance"]
     )
-    if value is not None:
+    if identity not in [
+        "clear", 
+        "store_sentences",
+        "store_query_embedding",
+        "store_sentence_embeddings",
+    ]:
         recommendations = pd.read_json(store_recommendations)
         history = pd.read_json(store_history)
         sentences = pd.read_json(store_sentences)
@@ -385,32 +390,35 @@ def update_history(
                     new_relevance = [True if (c % 2) == 1 else False 
                                      for c in history_card_clicks]
                     history = history.assign(relevance = new_relevance)
-                elif identity["kind"] == "document_sentence":
-                    index = identity["index"]
-                    in_history = history\
-                    .query(f"filename == '{dropdown_value}' and sentence == {index}")
-                    if in_history.shape[0] == 0:
-                        original = sentences\
-                        .query(f"filename == '{dropdown_value}'")\
-                        .sort_values("sentence")
-                        new = dict(
-                            filename = dropdown_value,
-                            sentence = index,
-                            text = original.text[index],
-                            relevance = True if value == 1 else False
-                        )
-                        history = pd.concat(
-                            (
-                                history,
-                                pd.DataFrame(
-                                    [new], 
-                                    index = [original.index[index]]
-                                )
-                            )
-                        )
-                    else:
-                        position = (history.filename == dropdown_value) & (history.sentence == index)
-                        history.loc[position, "relevance"] = not history.loc[position].relevance.tolist()[0]
+                # elif identity["kind"] == "document_sentence":
+                #     index = identity["index"]
+                #     in_history = history\
+                #     .query(f"filename == '{dropdown_value}' and sentence == {index}")
+                #     print("in_history", in_history.shape)
+                #     if in_history.shape[0] == 0:
+                #         print("new")
+                #         original = sentences\
+                #         .query(f"filename == '{dropdown_value}'")\
+                #         .sort_values("sentence")
+                #         new = dict(
+                #             filename = dropdown_value,
+                #             sentence = index,
+                #             text = original.text[index],
+                #             relevance = True if value == 1 else False
+                #         )
+                #         history = pd.concat(
+                #             (
+                #                 history,
+                #                 pd.DataFrame(
+                #                     [new], 
+                #                     index = [original.index[index]]
+                #                 )
+                #             )
+                #         )
+                #     else:
+                #         print("append")
+                #         position = (history.filename == dropdown_value) & (history.sentence == index)
+                #         history.loc[position, "relevance"] = not history.loc[position].relevance.tolist()[0]
     return history.to_json()
 
 
@@ -853,5 +861,8 @@ def update_recommendation_colors(clicks):
         return {"background":"lightgreen"} if (clicks % 2) == 1 else {"background":"lightpink"}
 
 if __name__ == '__main__':
-    # app.run_server(debug = True, host = "0.0.0.0", port = 37639)
-    app.run_server()
+    app.run_server(
+        # debug = True, 
+        host = "0.0.0.0", 
+        port = 37639
+    )
