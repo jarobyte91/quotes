@@ -168,9 +168,9 @@ def add_paper(
             ignore_index = True
         )
     else:
-        index_kind = json.loads(prop_id.split(".")[0])
-        index = index_kind["index"]
-        kind = index_kind["kind"]
+        identity = json.loads(prop_id.split(".")[0])
+        index = identity["index"]
+        kind = identity["kind"]
         if kind == "delete_document" and value:
             filename = store_papers.filename[index] 
             store_papers = store_papers\
@@ -296,7 +296,6 @@ def update_history_body(history):
                 html.Th("Paper"), 
                 html.Th("Sentence"), 
                 html.Th("Text"), 
-                html.Th("Relevant?", colSpan = 2)
             ]
         )
         history_body = [header]
@@ -307,27 +306,16 @@ def update_history_body(history):
                 paper = html.Td(r["filename"][:30] + "...")
             sentence = html.Td(r["sentence"] + 1)
             content = html.Td(r["text"])
-            accept = dbc.Button(
-                "✔", 
-                id = dict(kind = "history_accept", index = i), 
-                style = {"background":"seagreen"}
-            )
-            reject = dbc.Button(
-                "✕", 
-                id = dict(kind = "history_reject", index = i), 
-                style = {"background":"firebrick"}
-            )
             card_style = {"background":"lightgreen"} if r["relevance"] else {"background":"lightpink"} 
             row = html.Tr(
                 [
                     paper, 
                     sentence, 
                     content, 
-                    html.Td(accept), 
-                    html.Td(reject)
                 ], 
                 id = dict(kind = "history_card", index = i), 
-                style = card_style
+                style = card_style,
+                n_clicks = 1 if r["relevance"] else 0
             )
             history_body.append(row)
         return  dbc.Table(history_body)
@@ -341,77 +329,88 @@ def update_history_body(history):
     Input("store_sentences", "data"),
     Input("store_query_embedding", "data"),
     Input("store_sentence_embeddings", "data"),
-    Input({"kind":"history_accept", "index":ALL}, "n_clicks"),
-    Input({"kind":"history_reject", "index":ALL}, "n_clicks"),
     Input("button_submit_labels", "n_clicks"),
+    Input({"kind":"history_card", "index":ALL}, "n_clicks"),
+    Input({"kind":"document_sentence", "index":ALL}, "n_clicks"),
     State({"kind":"recommendation_text", "index":ALL}, "style"),
     State("store_history", "data"),
     State("store_recommendations", "data"),
+    State("document_dropdown", "value"),
     prevent_initial_call = True
 )
-def update_history(*args):
+def update_history(
+    clear,
+    store_sentences,
+    store_query_embedding,
+    store_sentence_embeddings,
+    button_submit_labels,
+    history_card_clicks,
+    document_sentence_clicks,
+    recommendation_text_styles,
+    store_history,
+    store_recommendations,
+    dropdown_value
+):
     ctx = dash.callback_context
     prop_id = ctx.triggered[0]["prop_id"]
     value = ctx.triggered[0]["value"]
-    index_type, attribute = prop_id.split(".")
+    identity, attribute = prop_id.split(".")
     history = pd.DataFrame(
         columns = ["filename", "sentence", "text", "relevance"]
     )
-    if index_type not in [
-        "clear", 
-        "store_sentences",
-        "store_query_embedding",
-        "store_sentence_embeddings",
-        "button_none",
-        "button_submit_labels"
-    ]:
-        index_kind = json.loads(index_type)
-        index = index_kind["index"]
-        kind = index_kind["kind"]
-        subtype, accept = kind.split("_")
-        history = args[-2]
-        recommendations = args[-1]
-        if value is None:
-            return history
+    if value is not None:
+        recommendations = pd.read_json(store_recommendations)
+        history = pd.read_json(store_history)
+        sentences = pd.read_json(store_sentences)
+        if identity == "button_submit_labels":
+            values = [True if x is not None and x["background"] == "lightgreen" else False 
+                      for x in recommendation_text_styles]
+            new = recommendations[["filename", "sentence", "text"]]\
+            .head(candidates)\
+            .assign(
+                relevance = [x if x is not None else pd.NA for x in values]
+            )\
+            .set_index(recommendations.index[:candidates])\
+            .dropna()
+            history = pd.concat(
+                (
+                    history,
+                    new
+                ),
+            )
         else:
-            recommendations = pd.read_json(recommendations)
-            history = pd.read_json(history)
-            if subtype == "history":
-                history.iloc[index, -1] = True if accept == "accept" else False
-            else:
-                r = recommendations.to_dict("records")[index]
-                new = dict(
-                    filename = r["filename"],
-                    sentence = r["sentence"], 
-                    text = r["text"], 
-                    relevance = True if accept == "accept" else False
-                )
-                history = pd.concat(
-                    (
-                        history, 
-                        pd.DataFrame(
-                            [new], 
-                            index = [recommendations.index[index]]
+            if identity[0] == "{" and identity[-1] == "}":
+                identity = json.loads(identity)
+                if identity["kind"] == "history_card":
+                    new_relevance = [True if (c % 2) == 1 else False 
+                                     for c in history_card_clicks]
+                    history = history.assign(relevance = new_relevance)
+                elif identity["kind"] == "document_sentence":
+                    index = identity["index"]
+                    in_history = history\
+                    .query(f"filename == '{dropdown_value}' and sentence == {index}")
+                    if in_history.shape[0] == 0:
+                        original = sentences\
+                        .query(f"filename == '{dropdown_value}'")\
+                        .sort_values("sentence")
+                        new = dict(
+                            filename = dropdown_value,
+                            sentence = index,
+                            text = original.text[index],
+                            relevance = True if value == 1 else False
                         )
-                    )
-                )
-    elif index_type == "button_submit_labels":
-        values = args[-3]
-        values = [True if x is not None and x["background"] == "lightgreen" else False for x in args[-3]]
-        history = args[-2]
-        recommendations = args[-1]
-        recommendations = pd.read_json(recommendations)
-        history = pd.read_json(history)
-        new = recommendations[["filename", "sentence", "text"]].head(candidates)\
-        .assign(relevance = [x if x is not None else pd.NA for x in values])\
-        .set_index(recommendations.index[:candidates])\
-        .dropna()
-        history = pd.concat(
-            (
-                history,
-                new
-            ),
-        )
+                        history = pd.concat(
+                            (
+                                history,
+                                pd.DataFrame(
+                                    [new], 
+                                    index = [original.index[index]]
+                                )
+                            )
+                        )
+                    else:
+                        position = (history.filename == dropdown_value) & (history.sentence == index)
+                        history.loc[position, "relevance"] = not history.loc[position].relevance.tolist()[0]
     return history.to_json()
 
 
@@ -762,7 +761,11 @@ def update_documents_body(sentences, dropdown_value, history):
                     html.Td(i + 1),
                     html.Td(r["text"])
                 ],
-                style = style
+                style = style,
+                id = dict(
+                    kind = "document_sentence",
+                    index = i
+                ),
             )
             documents_body.append(row)
         return dbc.Table(documents_body)
@@ -850,5 +853,5 @@ def update_recommendation_colors(clicks):
         return {"background":"lightgreen"} if (clicks % 2) == 1 else {"background":"lightpink"}
 
 if __name__ == '__main__':
-    app.run_server(debug = True, host = "0.0.0.0", port = 37639)
-    # app.run_server()
+    # app.run_server(debug = True, host = "0.0.0.0", port = 37639)
+    app.run_server()
