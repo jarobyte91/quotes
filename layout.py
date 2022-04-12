@@ -322,14 +322,22 @@ query = dbc.Container(
     fluid = True
 )
 
-alert = dbc.Alert(
-    "You can stop labelling now",
+alert = dbc.Modal(
+    [
+        dbc.ModalHeader("You can stop labelling now"),
+        dbc.ModalBody(
+                [
+                    "Show this alert ",
+                    dbc.Checkbox(
+                        id = "alert_checkbox",
+                        checked = True
+                    )
+                ]
+        )
+    ],
     id = "alert",
-    dismissable = True,
     is_open = False,
-    color = "warning",
 )
-
 recommendations_body = dbc.Container(
     [
        dbc.Row(
@@ -362,7 +370,6 @@ tab_search = dbc.Tab(
     children =[
         query,
         html.P(),
-        # alert,
         recommendations_body,
     ],
 )
@@ -439,7 +446,6 @@ app.layout = dbc.Container(
     children = [
         html.H1("QuOTeS - Query-Oriented Technical Summarization"),
         store,
-        # alert,
         dbc.Tabs(
             [
                 tab_tutorial, 

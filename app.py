@@ -248,8 +248,9 @@ def download_json(clicks, history, sentences, query):
     Output("alert", "is_open"),
     Input("store_recommendations", "data"),
     State("store_history", "data"),
+    State("alert_checkbox", "checked"),
 )
-def update_recommendations_body(recommendations, history):
+def update_recommendations_body(recommendations, history, alert_checkbox):
     output = []
     strikes_string = ""
     strikes_style = None
@@ -283,7 +284,8 @@ def update_recommendations_body(recommendations, history):
                 strikes_style = {"background":"lightgreen"}
             else:
                 strikes_style = {"background":"lightpink"}
-                open_alert = True
+                if alert_checkbox:
+                    open_alert = True
     return dbc.Table(output), strikes_string, strikes_style, open_alert
 
 
