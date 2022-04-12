@@ -5,7 +5,6 @@ from dash import html
 import pandas as pd
 import pdftotext as pt
 from flask import Flask
-# import plotly.express as px
  
 server = Flask(__name__)
 app = dash.Dash(
@@ -323,6 +322,14 @@ query = dbc.Container(
     fluid = True
 )
 
+alert = dbc.Alert(
+    "You can stop labelling now",
+    id = "alert",
+    dismissable = True,
+    is_open = False,
+    color = "warning",
+)
+
 recommendations_body = dbc.Container(
     [
        dbc.Row(
@@ -338,6 +345,7 @@ recommendations_body = dbc.Container(
             align = "center",
         ),
         html.Div(id = "suggestions_content"),
+        alert,
         dbc.Card(
            dbc.Button(
                "Submit Labels",
@@ -354,6 +362,7 @@ tab_search = dbc.Tab(
     children =[
         query,
         html.P(),
+        # alert,
         recommendations_body,
     ],
 )
@@ -430,6 +439,7 @@ app.layout = dbc.Container(
     children = [
         html.H1("QuOTeS - Query-Oriented Technical Summarization"),
         store,
+        # alert,
         dbc.Tabs(
             [
                 tab_tutorial, 

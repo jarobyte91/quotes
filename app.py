@@ -245,6 +245,7 @@ def download_json(clicks, history, sentences, query):
     Output("suggestions_content", "children"),
     Output("consecutive_strikes", "children"),
     Output("consecutive_strikes", "style"),
+    Output("alert", "is_open"),
     Input("store_recommendations", "data"),
     State("store_history", "data"),
 )
@@ -252,6 +253,7 @@ def update_recommendations_body(recommendations, history):
     output = []
     strikes_string = ""
     strikes_style = None
+    open_alert = False
     if recommendations:
         recommendations = pd.read_json(recommendations)
         for i, s in enumerate(recommendations.text.head(candidates)):
@@ -281,7 +283,8 @@ def update_recommendations_body(recommendations, history):
                 strikes_style = {"background":"lightgreen"}
             else:
                 strikes_style = {"background":"lightpink"}
-    return dbc.Table(output), strikes_string, strikes_style
+                open_alert = True
+    return dbc.Table(output), strikes_string, strikes_style, open_alert
 
 
 @app.callback(
@@ -862,7 +865,7 @@ def update_recommendation_colors(clicks):
 
 if __name__ == '__main__':
     app.run_server(
-        # debug = True, 
+        debug = True, 
         host = "0.0.0.0", 
         port = 37639
     )
