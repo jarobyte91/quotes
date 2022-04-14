@@ -94,11 +94,11 @@ tab_tutorial = dbc.Tab(
 # Upload tab
 ###################################
 
-add_paper = dbc.Row(
+add = dbc.Row(
     [
         dbc.Col(
             dbc.Card(
-                dbc.Button(dcc.Upload("Upload file", id = "upload"))
+                dbc.Button(dcc.Upload("Upload", id = "upload"))
             ),
             width = 3,
         ),
@@ -106,9 +106,9 @@ add_paper = dbc.Row(
             dbc.Card(
                 dbc.Button(
                     [
-                        "Add Paper ",
+                        "Add",
                     ], 
-                    id = "add_paper"
+                    id = "add"
                 )
             ),
             width = 3,
@@ -122,7 +122,7 @@ tab_upload = dbc.Tab(
         [
             settings_modal,
             html.P(),
-            add_paper,
+            add,
             html.P(),
             dbc.Col(
                 dbc.Row(
@@ -140,8 +140,8 @@ tab_upload = dbc.Tab(
                     dbc.Col(
                         dbc.Card(
                             dbc.Button(
-                                "Process Papers", 
-                                id = "process_papers"
+                                "Process Documents", 
+                                id = "process_documents"
                             )
                         ),
                         width = 3,
@@ -152,7 +152,6 @@ tab_upload = dbc.Tab(
                             dbc.Button(
                                 "Settings", 
                                 id = "settings", 
-                                disabled = True
                             )
                         ),
                         width = 3,
@@ -205,7 +204,7 @@ tab_history = dbc.Tab(
         [
             dbc.Row(
                 [
-                    dbc.Col(html.H3("Query")),
+                    dbc.Col(html.H3("History")),
                     dbc.Col(),
                     dbc.Col(
                         dbc.Card(
@@ -222,10 +221,9 @@ tab_history = dbc.Tab(
                         ),
                         width = 3
                     )
-                ]
+                ],
+                align = "center"
             ),
-            html.P(id = "reviews_query"),
-            html.H3("Reviewed Sentences"),
             html.Div(id = "history_body")
         ],
         fluid = True
@@ -233,16 +231,16 @@ tab_history = dbc.Tab(
 )
 
 ###################################
-# Summary tab
+# Results tab
 ###################################
 
-tab_summary = dbc.Tab(
-    label = "Summary",
+tab_results = dbc.Tab(
+    label = "Results",
     children = dbc.Container(
     [
-        dbc.Row(
+       dbc.Row(
             [
-                dbc.Col([html.H3("Query")], width = 3),
+                dbc.Col([html.H3("Results")], width = 3),
                 dbc.Col(),
                 dbc.Col(
                     dbc.Card(
@@ -262,10 +260,18 @@ tab_summary = dbc.Tab(
                     ), 
                     width = 3
                 )
-            ]
+            ],
+            align = "center"
         ),
-        html.P(id = "summary_query"),
-        html.H3("Accepted Sentences"),
+        dbc.Row(
+           [
+               dbc.Col(dcc.Graph(id = "general"), width = 6),
+               dbc.Col(dcc.Graph(id = "barplot"), width = 6),
+           ],
+        ),           
+        html.H3("Query"),
+        html.Div(id = "results_query"),
+        html.H3("Summary"),
         html.Ul(id = "accepted_sentences")
     ],
     fluid = True
@@ -295,9 +301,6 @@ tab_documents = dbc.Tab(
 # Search tab
 ###################################
 
-# number of sentences presented to the user
-candidates = 3
-
 query = dbc.Container(
     children = [
         dbc.Row(
@@ -308,7 +311,7 @@ query = dbc.Container(
                     id = "embeddings_status_search"
                 ),
                 dbc.Col(
-                    dbc.Card(dbc.Button("Submit", id = "submit")), 
+                    dbc.Card(dbc.Button("Search", id = "search")), 
                     width = 3
                 ),
             ],
@@ -321,6 +324,35 @@ query = dbc.Container(
     ], 
     fluid = True
 )
+
+results_body = dbc.Container(
+    [
+        html.Div(id = "results_content"),
+        dbc.Card(
+           dbc.Button(
+               "Submit",
+               id = "submit_search"
+           )
+        ),
+    ],
+    fluid = True
+)
+
+tab_search = dbc.Tab(
+    label = "Search", 
+    children =[
+        query,
+        html.P(),
+        results_body
+    ],
+)
+
+###################################
+# Explore tab
+###################################
+
+# number of sentences presented to the user
+candidates = 3
 
 alert = dbc.Modal(
     [
@@ -338,11 +370,12 @@ alert = dbc.Modal(
     id = "alert",
     is_open = False,
 )
+
 recommendations_body = dbc.Container(
     [
-       dbc.Row(
+        dbc.Row(
             [
-                dbc.Col(html.H3("Suggested Sentences")),
+                dbc.Col(html.H3("Explore")),
                 dbc.Col(
                     dbc.Container(
                         id = "consecutive_strikes"
@@ -352,12 +385,18 @@ recommendations_body = dbc.Container(
             ],
             align = "center",
         ),
+        dbc.Row(
+            [
+                dbc.Col(dcc.Graph(id = "histogram"), width = 6),
+                dbc.Col(dcc.Graph(id = "boxplot"), width = 6),
+            ],
+        ),
         html.Div(id = "suggestions_content"),
         alert,
         dbc.Card(
            dbc.Button(
-               "Submit Labels",
-               id = "button_submit_labels"
+               "Submit",
+               id = "submit_explore"
            )
         ),
     ],
@@ -365,38 +404,11 @@ recommendations_body = dbc.Container(
 )
 
 
-tab_search = dbc.Tab(
-    label = "Search", 
-    children =[
-        query,
-        html.P(),
+tab_explore = dbc.Tab(
+    label = "Explore",
+    children = [
         recommendations_body,
     ],
-)
-
-###################################
-# Dashboard tab
-###################################
-
-tab_dashboard = dbc.Tab(
-    label = "Dashboard",
-    children = dbc.Container(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(dcc.Graph(id = "general"), width = 6),
-                    dbc.Col(dcc.Graph(id = "barplot"), width = 6),
-                ],
-            ),           
-            dbc.Row(
-                [
-                    dbc.Col(dcc.Graph(id = "histogram"), width = 6),
-                    dbc.Col(dcc.Graph(id = "boxplot"), width = 6),
-                ],
-            ),
-        ],
-        fluid = True,
-    )
 )
 
 ###################################
@@ -414,6 +426,7 @@ store_history = dcc.Store(
     id = "store_history"
 )
 store_recommendations = dcc.Store(id = "store_recommendations")
+store_results = dcc.Store(id = "store_results")
 store_papers = dcc.Store(id = "store_papers")
 store_vocabulary = dcc.Store(id = "store_vocabulary")
 download_csv = dcc.Download(id = "download_csv")
@@ -426,6 +439,7 @@ store = dbc.Spinner(
         store_query_embedding,
         store_history,
         store_recommendations,
+        store_results,
         store_papers,
         store_vocabulary,
         download_csv,
@@ -452,9 +466,9 @@ app.layout = dbc.Container(
                 tab_upload, 
                 tab_documents, 
                 tab_search, 
+                tab_explore, 
                 tab_history, 
-                tab_dashboard, 
-                tab_summary
+                tab_results
             ],
             active_tab = "tab-1"
         ),
