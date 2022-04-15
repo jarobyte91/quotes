@@ -965,6 +965,6 @@ def update_results_colors(clicks):
 if __name__ == '__main__':
     app.run_server(
         debug = True, 
-        # host = "0.0.0.0", 
-        # port = 37639
+        host = "0.0.0.0", 
+        port = 37639
     )
