@@ -5,6 +5,7 @@ from dash import html
 import pandas as pd
 import pdftotext as pt
 from flask import Flask
+import plotly.express as px
  
 server = Flask(__name__)
 app = dash.Dash(
@@ -14,6 +15,24 @@ app = dash.Dash(
 )
 app.title = "QuOTeS"
  
+###################################
+# Tutorial tab
+###################################
+
+tab_tutorial = dbc.Tab(
+    label = "Tutorial",
+    id = "tab_tutorial",
+    disabled = True,
+    children = dbc.Container(
+        html.Iframe(
+            src = "https://www.youtube.com/embed/67Y-A1e8K6U",
+            height = 315,
+            width = 560
+        ),
+        fluid = True
+    )
+)
+
 ###################################
 # Settings Modal
 ###################################
@@ -73,24 +92,6 @@ settings_modal = dbc.Modal(
 )
 
 ###################################
-# Tutorial tab
-###################################
-
-tab_tutorial = dbc.Tab(
-    label = "Tutorial",
-    id = "tab_tutorial",
-    disabled = True,
-    children = dbc.Container(
-        html.Iframe(
-            src = "https://www.youtube.com/embed/67Y-A1e8K6U",
-            height = 315,
-            width = 560
-        ),
-        fluid = True
-    )
-)
-
-###################################
 # Upload tab
 ###################################
 
@@ -120,6 +121,7 @@ tab_upload = dbc.Tab(
     id = "tab_upload", 
     children = dbc.Container(
         [
+            html.H3("Upload"),
             settings_modal,
             html.P(),
             add,
@@ -133,7 +135,7 @@ tab_upload = dbc.Tab(
                 ),
             ),
             html.P(),
-            html.H3("Uploaded Papers"),
+            html.H4("Uploaded Documents"),
             html.Div(id = "paper_list_show"),           
             dbc.Row(
                 [
@@ -195,90 +197,6 @@ tab_upload = dbc.Tab(
 )
 
 ###################################
-# History tab
-###################################
-
-tab_history = dbc.Tab(
-    label = "History", 
-    children = dbc.Container(
-        [
-            dbc.Row(
-                [
-                    dbc.Col(html.H3("History")),
-                    dbc.Col(),
-                    dbc.Col(
-                        dbc.Card(
-                            dbc.Button("Clear history", id = "clear")
-                        ),
-                        width = 3
-                    ),
-                    dbc.Col(
-                        dbc.Card(
-                            dbc.Button(
-                                "Download .csv", 
-                                id = "download_csv_button"
-                            )
-                        ),
-                        width = 3
-                    )
-                ],
-                align = "center"
-            ),
-            html.Div(id = "history_body")
-        ],
-        fluid = True
-    )
-)
-
-###################################
-# Results tab
-###################################
-
-tab_results = dbc.Tab(
-    label = "Results",
-    children = dbc.Container(
-    [
-       dbc.Row(
-            [
-                dbc.Col([html.H3("Results")], width = 3),
-                dbc.Col(),
-                dbc.Col(
-                    dbc.Card(
-                        dbc.Button(
-                            "Download .txt", 
-                            id = "download_txt_button"
-                        )
-                    ), 
-                    width = 3
-                ),
-                dbc.Col(
-                    dbc.Card(
-                        dbc.Button(
-                            "Download .json", 
-                            id = "download_json_button"
-                        )
-                    ), 
-                    width = 3
-                )
-            ],
-            align = "center"
-        ),
-        dbc.Row(
-           [
-               dbc.Col(dcc.Graph(id = "general"), width = 6),
-               dbc.Col(dcc.Graph(id = "barplot"), width = 6),
-           ],
-        ),           
-        html.H3("Query"),
-        html.Div(id = "results_query"),
-        html.H3("Summary"),
-        html.Ul(id = "accepted_sentences")
-    ],
-    fluid = True
-    ), 
-)
-
-###################################
 # Documents tab
 ###################################
 
@@ -290,11 +208,39 @@ tab_documents = dbc.Tab(
     children = dbc.Container(
         fluid = True,
         children = [
+            html.H3("Documents"),
             dropdown,
             dcc.Store(data = 0, id = "document_id"),
             html.Div(id = "documents_body")
         ]
     )
+)
+
+###################################
+# Overview tab
+###################################
+
+plot = px.bar(
+    # height = 300
+)
+plot.update_layout(
+    # title = "Sentence Map",
+    xaxis_title = "",
+    yaxis_title = "",
+)
+
+tab_overview = dbc.Tab(
+    label = "Overview",
+    children = dbc.Container(
+        [
+            html.H4("Topics"),
+            html.Div(id = "topics"),
+            html.P(),
+            html.H4("Visualization"),
+            dcc.Graph(id = "visualization", figure = plot),
+        ],
+        fluid = True
+    ),
 )
 
 ###################################
@@ -305,7 +251,7 @@ query = dbc.Container(
     children = [
         dbc.Row(
             [
-                dbc.Col(html.H3("Query")),
+                dbc.Col(html.H3("Search")),
                 dbc.Col(
                     width = 3,
                     id = "embeddings_status_search"
@@ -412,6 +358,90 @@ tab_explore = dbc.Tab(
 )
 
 ###################################
+# History tab
+###################################
+
+tab_history = dbc.Tab(
+    label = "History", 
+    children = dbc.Container(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(html.H3("History")),
+                    dbc.Col(),
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.Button("Clear history", id = "clear")
+                        ),
+                        width = 3
+                    ),
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.Button(
+                                "Download .csv", 
+                                id = "download_csv_button"
+                            )
+                        ),
+                        width = 3
+                    )
+                ],
+                align = "center"
+            ),
+            html.Div(id = "history_body")
+        ],
+        fluid = True
+    )
+)
+
+###################################
+# Results tab
+###################################
+
+tab_results = dbc.Tab(
+    label = "Results",
+    children = dbc.Container(
+    [
+       dbc.Row(
+            [
+                dbc.Col([html.H3("Results")], width = 3),
+                dbc.Col(),
+                dbc.Col(
+                    dbc.Card(
+                        dbc.Button(
+                            "Download .txt", 
+                            id = "download_txt_button"
+                        )
+                    ), 
+                    width = 3
+                ),
+                dbc.Col(
+                    dbc.Card(
+                        dbc.Button(
+                            "Download .json", 
+                            id = "download_json_button"
+                        )
+                    ), 
+                    width = 3
+                )
+            ],
+            align = "center"
+        ),
+        dbc.Row(
+           [
+               dbc.Col(dcc.Graph(id = "general"), width = 6),
+               dbc.Col(dcc.Graph(id = "barplot"), width = 6),
+           ],
+        ),           
+        html.H4("Query"),
+        html.Div(id = "results_query"),
+        html.H4("Summary"),
+        html.Ul(id = "accepted_sentences")
+    ],
+    fluid = True
+    ), 
+)
+
+###################################
 # Stores
 ###################################
 
@@ -465,6 +495,7 @@ app.layout = dbc.Container(
                 tab_tutorial, 
                 tab_upload, 
                 tab_documents, 
+                tab_overview, 
                 tab_search, 
                 tab_explore, 
                 tab_history, 

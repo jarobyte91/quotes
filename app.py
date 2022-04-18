@@ -1,6 +1,6 @@
 import dash
 import dash_bootstrap_components as dbc
-from dash import html
+from dash import html, dash_table
 import pandas as pd
 import pdftotext as pt
 from io import BytesIO
@@ -9,18 +9,42 @@ import json
 import base64
 from sentence_transformers import SentenceTransformer
 from nltk.tokenize import PunktSentenceTokenizer
+from nltk.stem import WordNetLemmatizer
 import numpy as np
 from scipy.sparse import csr_matrix
 from dash.dependencies import Input, Output, State, ALL, MATCH
 import plotly.express as px
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.preprocessing import normalize
+from sklearn.manifold import TSNE
+from sklearn.decomposition import LatentDirichletAllocation
 from itertools import takewhile
 import chardet
+from itertools import zip_longest
 
 import scores
 from layout import app, candidates
           
+# lemmatizer = WordNetLemmatizer()
+# 
+# def preprocessing(s):
+#     return lemmatizer.lemmatize(s.lower())
+
+def grouper(iterable, n, *, incomplete='fill', fillvalue=None):
+    "Collect data into non-overlapping fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, fillvalue='x') --> ABC DEF Gxx
+    # grouper('ABCDEFG', 3, incomplete='strict') --> ABC DEF ValueError
+    # grouper('ABCDEFG', 3, incomplete='ignore') --> ABC DEF
+    args = [iter(iterable)] * n
+    if incomplete == 'fill':
+        return zip_longest(*args, fillvalue=fillvalue)
+    if incomplete == 'strict':
+        return zip(*args, strict=True)
+    if incomplete == 'ignore':
+        return zip(*args)
+    else:
+        raise ValueError('Expected fill, strict, or ignore')
+
 ###################################
 # Callbacks
 ###################################
@@ -962,6 +986,137 @@ def update_results_colors(clicks):
     if clicks:
         return {"background":"lightgreen"} if (clicks % 2) == 1 else {"background":"lightpink"}
 
+@app.callback(
+    Output("visualization", "figure"),
+    Input("store_sentence_embeddings", "data"),
+    State("store_sentences", "data")
+)
+def update_visualization(store_sentence_embeddings, store_sentences):
+    if store_sentence_embeddings and store_sentences:
+        store_sentence_embeddings = json.loads(store_sentence_embeddings)
+        sentences = pd.read_json(store_sentences)
+        if isinstance(store_sentence_embeddings, dict):
+            sentence_embeddings = csr_matrix(
+                (
+                    store_sentence_embeddings["data"],
+                    store_sentence_embeddings["ind"],
+                    store_sentence_embeddings["indptr"]
+                ),
+                shape = store_sentence_embeddings["shape"]
+            )
+            # query_embedding = csr_matrix(
+            #     (
+            #         query_embedding["data"],
+            #         query_embedding["ind"],
+            #         query_embedding["indptr"]
+            #     ),
+            #     shape = query_embedding["shape"]
+            # )
+        else:
+            sentence_embeddings = np.array(store_sentence_embeddings)
+            # query_embedding = np.array(query_embedding)
+        distances = 1 - (sentence_embeddings @ sentence_embeddings.T).toarray()
+        X = TSNE(
+            square_distances = "legacy", 
+            random_state = 1234
+        ).fit_transform(distances)
+        data = pd.DataFrame(
+            dict(
+                x = X[:, 0], 
+                y = X[:, 1], 
+                name = sentences.text.map(
+                    lambda x: "<br>".join([" ".join(y) for y in grouper(x.split(" "), 5, fillvalue = "")])
+                )
+            )
+        )
+        fig = px.scatter(
+            data_frame = data,
+            x = "x",
+            y = "y",
+            hover_name = "name",
+            # hoverinfo = "skip",
+            hover_data = {"x":False, "y":False},
+            opacity = 0.5,
+            # color = "darkblue"
+        )
+    else:
+        fig = px.scatter()
+    fig.update_layout(
+        xaxis_title = "",
+        yaxis_title = "",
+    )
+    return fig
+
+@app.callback(
+    Output("topics", "children"),
+    Input("store_sentences", "data"),
+)
+def update_topics(store_sentences):
+    if store_sentences:
+        sentences = pd.read_json(store_sentences)
+        # vectorizer = CountVectorizer(
+        vectorizer = TfidfVectorizer(
+            # max_df = 0.25,
+            # preprocessor = preprocessing,
+            min_df = 5,
+            stop_words = "english",
+            token_pattern = r"[a-zA-Z]{2,}"
+        )
+        embeddings = vectorizer.fit_transform(sentences.text)
+        # print("embeddings", embeddings.shape)
+        lda = LatentDirichletAllocation(
+            random_state = 1234,
+            max_iter = 20,
+            verbose = 1,
+            evaluate_every = 1
+        )\
+        .fit(embeddings)
+        sorting = np.argsort(lda.components_, axis = 1)
+        # print("lda components", lda.components_.shape)
+        # print("sorting", sorting.shape)
+        # print("lda sorting", lda.components_[0][sorting[0]])
+        #print(lda.components_[sorting[:, :5]])
+        main_words = vectorizer.get_feature_names_out()[sorting[:, -5:]].tolist()
+        main_words = [reversed(x) for x in main_words]
+        # print(main_words)
+        main_words = pd.DataFrame(
+            main_words,
+            index = [f"{i + 1}" for i in range(10)],
+            columns = [f"Word {i + 1}" for i in range(5)]
+        )\
+        .reset_index().rename(columns = {"index":"Topic"})
+        output = dash_table.DataTable(
+            data = main_words.to_dict("records"),
+            columns = [{"name":i, "id":i} for i in main_words.columns],
+            style_header = {
+                # "backgroundColor":"rgb(0, 0, 110)"
+                "backgroundColor":"steelblue",
+                "color":"white"
+            },
+            style_data_conditional = [
+                {
+                    "if":{"row_index":"odd"},
+                    # "backgroundColor":"rgb(173, 216, 230)"
+                    "backgroundColor":"lightsteelblue"
+
+                }
+            ]
+        )
+        return output
+        # header = html.Tr(
+        #     [html.Th("Topic")] + [html.Th(f"Word {i}") for i in range(1, 11)]
+        # )
+        # body = [
+        #     html.Tr([html.Td(f"Topic {i}")] + [html.Td(x) for x in r]) 
+        #     for i, r in enumerate(main_words, 1)
+        # ]
+        # return dbc.Table(
+        #     [header] + body, 
+        #     striped = True,
+        #     bordered = True,
+        #     hover = True
+        # )
+ 
 if __name__ == '__main__':
     app.run_server(
         debug = True, 
