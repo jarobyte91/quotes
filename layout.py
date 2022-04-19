@@ -233,15 +233,46 @@ tab_overview = dbc.Tab(
     label = "Overview",
     children = dbc.Container(
         [
-            html.H4("Topics"),
-            html.Div(id = "topics"),
+            html.H3("Overview"),
+            html.Div(
+                children = [
+                    html.H4("Topics"),
+                    html.Div(id = "topics_table"),
+                ],
+                id = "topics",
+                # hidden = True
+            ),
             html.P(),
-            html.H4("Visualization"),
-            dcc.Graph(id = "visualization", figure = plot),
+            dbc.Spinner(
+            # jhtml.Div(
+                children = [
+                    html.H4("Visualization"),
+                    dcc.Dropdown(
+                        id = "visualization_dropdown",
+                        # options = [
+                        #     # {"label":"None", "value":"None"},
+                        #     {"label":"Recommendation Score", "value":"Recommendation Score"},
+                        # ] + [{"label":f"Topic {i + 1}", "value":i} for i in range(10)],
+                        options = [{"label":f"Topic {i + 1}", "value":i} for i in range(10)],
+                        value = 0,
+                        clearable = False
+                        # value = "None"
+                    ),
+                    dcc.Graph(id = "visualization_graph", figure = plot),
+                ],
+                # hidden = True,
+                id = "visualization",
+                fullscreen = True,
+                fullscreen_style = {"opacity":0.5},
+                spinner_style={"width": "10rem", "height": "10rem"}
+            )
         ],
         fluid = True
     ),
 )
+
+
+
 
 ###################################
 # Search tab
@@ -448,6 +479,7 @@ tab_results = dbc.Tab(
 store_sentences = dcc.Store(id = "store_sentences")
 store_sentence_embeddings = dcc.Store(id = "store_sentence_embeddings")
 store_query_embedding= dcc.Store(id = "store_query_embedding")
+store_sentence_embeddings_lda = dcc.Store(id = "store_sentence_embeddings_lda")
 history = pd.DataFrame(
     columns = ["filename", "sentence", "text", "relevance"]
 ).to_json()
@@ -467,6 +499,7 @@ store = dbc.Spinner(
         store_sentences,
         store_sentence_embeddings,
         store_query_embedding,
+        store_sentence_embeddings_lda,
         store_history,
         store_recommendations,
         store_results,
