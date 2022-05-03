@@ -835,7 +835,8 @@ def update_documents_body(sentences, dropdown_value, history):
     ctx = dash.callback_context
     if sentences and history:
         sentences = pd.read_json(sentences)
-        history = pd.read_json(history)
+        history = pd.read_json(history)\
+                .query(f"filename == '{dropdown_value}'")
         positive = history.query("relevance == True").sentence.tolist()
         negative = history.query("relevance == False").sentence.tolist()
         documents_body = []
