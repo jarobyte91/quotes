@@ -30,11 +30,6 @@ from layout import app, candidates
 # Global Objects
 ###################################
          
-# lemmatizer = WordNetLemmatizer()
-# 
-# def preprocessing(s):
-#     return lemmatizer.lemmatize(s.lower())
-
 stop_words = stopwords.words("english") + stopwords.words("spanish")
 
 def grouper(iterable, n, *, incomplete='fill', fillvalue=None):
@@ -865,8 +860,10 @@ def update_plots(recommendations, history, papers):
 def update_documents_body(sentences, dropdown_value, history):
     ctx = dash.callback_context
     if sentences and history:
-        sentences = pd.read_json(sentences)
-        history = pd.read_json(history)
+        sentences = pd.read_json(sentences)\
+                .query(f"filename == '{dropdown_value}'")\
+                .to_dict("records")
+        history = pd.read_json(history).query(f"filename == '{dropdown_value}'")
         positive = history.query("relevance == True").sentence.tolist()
         negative = history.query("relevance == False").sentence.tolist()
         documents_body = []
@@ -877,11 +874,7 @@ def update_documents_body(sentences, dropdown_value, history):
             ]
         )
         documents_body.append(header)
-        for i, r in enumerate(
-            sentences\
-                .query(f"filename == '{dropdown_value}'")\
-                .to_dict("records")
-        ):
+        for i, r in enumerate(sentences):
             if i in positive:
                 style = {"background":"lightgreen"}
             elif i in negative:
@@ -998,12 +991,10 @@ def update_results_colors(clicks):
     Output("topics_table", "children"),
     Output("store_sentence_embeddings_lda", "data"),
     Input("store_sentences", "data"),
-    # prevent_initial_call = True
 )
 def update_topics(store_sentences):
     if store_sentences:
         sentences = pd.read_json(store_sentences)
-        # topics
         # vectorizer = TfidfVectorizer(
         vectorizer = CountVectorizer(
             min_df = 10,
@@ -1048,7 +1039,6 @@ def update_topics(store_sentences):
     return topics_hidden, topics_output, embeddings_lda
 
 @app.callback(
-    # Output("visualization", "hidden"),
     Output("visualization_graph", "figure"),
     Input("store_sentence_embeddings", "data"),
     Input("visualization_dropdown", "value"),
@@ -1065,7 +1055,6 @@ def update_visualization(
         store_sentence_embeddings = json.loads(store_sentence_embeddings)
         sentence_embeddings_lda = np.array(json.loads(store_sentence_embeddings_lda))
         sentences = pd.read_json(store_sentences)
-        # visualization
         if isinstance(store_sentence_embeddings, dict):
             sentence_embeddings = csr_matrix(
                 (
@@ -1075,17 +1064,8 @@ def update_visualization(
                 ),
                 shape = store_sentence_embeddings["shape"]
             )
-            # query_embedding = csr_matrix(
-            #     (
-            #         query_embedding["data"],
-            #         query_embedding["ind"],
-            #         query_embedding["indptr"]
-            #     ),
-            #     shape = query_embedding["shape"]
-            # )
         else:
             sentence_embeddings = np.array(store_sentence_embeddings)
-            # query_embedding = np.array(query_embedding)
         distances = 1 - (sentence_embeddings @ sentence_embeddings.T).toarray()
         X = TSNE(
             square_distances = "legacy", 
@@ -1110,25 +1090,21 @@ def update_visualization(
             hover_data = {"x":False, "y":False},
             opacity = 0.5,
             color = "Topic",
-            # color_continuous_scale = "bluered"
         )
         fig.update_traces(
             marker = {
                 "size":8,
                 "line":dict(
                     width = 1, 
-                    # color = "Black"
                 )
             }
         )
     else:
-        # visualization_hidden = True
         fig = px.scatter()
     fig.update_layout(
         xaxis_title = "",
         yaxis_title = "",
     )
-    # return visualization_hidden, fig
     return fig
  
 if __name__ == '__main__':
