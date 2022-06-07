@@ -233,7 +233,8 @@ def download_json(clicks, history, sentences, query):
     if history and sentences and query:
         filename = "quotes_results.json"
         content = dict(
-            sentences = json.loads(sentences),
+            # sentences = json.loads(sentences),
+            sentences = sentences,
             query = query,
             history = history
         )

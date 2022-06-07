@@ -79,7 +79,7 @@ settings_modal = dbc.Modal(
 tab_tutorial = dbc.Tab(
     label = "Tutorial",
     id = "tab_tutorial",
-    disabled = True,
+    # disabled = True,
     children = dbc.Container(
         html.Iframe(
             src = "https://www.youtube.com/embed/67Y-A1e8K6U",
@@ -335,7 +335,8 @@ results_body = dbc.Container(
            )
         ),
     ],
-    fluid = True
+    fluid = True,
+    style = {"padding-bottom":"25px"}
 )
 
 tab_search = dbc.Tab(
@@ -396,11 +397,12 @@ recommendations_body = dbc.Container(
         dbc.Card(
            dbc.Button(
                "Submit",
-               id = "submit_explore"
+               id = "submit_explore",
            )
         ),
     ],
-    fluid = True
+    fluid = True,
+    style = {"padding-bottom":"25px"}
 )
 
 
