@@ -241,19 +241,19 @@ def download_json(clicks, history, sentences, query):
     return dict(content = json.dumps(content), filename = filename) 
 
 @app.callback(
-    Output("store_results", "data"),
+    Output("store_search_results", "data"),
     Input("store_history", "data"),
     Input("store_sentence_embeddings", "data"),
     Input("store_query_embedding", "data"),
     State("store_sentences", "data"),
 )
-def update_results(
+def update_search_results(
     history, 
     sentence_embeddings, 
     query_embedding, 
     sentences,
 ):
-    results = pd.DataFrame(
+    search_results = pd.DataFrame(
         columns = ["filename", "sentence", "text", "score"]
     )
     if history and sentence_embeddings and query_embedding and sentences:
@@ -282,34 +282,34 @@ def update_results(
             query_embedding = np.array(query_embedding)
         sentences = pd.read_json(sentences)
         if len(sentences) > 0:
-            results_index = [i for i in sentences.index if i not in history.index]
-            results_embeddings = sentence_embeddings[results_index]
-            results = sentences.loc[results_index]
+            search_results_index = [i for i in sentences.index if i not in history.index]
+            search_results_embeddings = sentence_embeddings[search_results_index]
+            search_results = sentences.loc[search_results_index]
             if isinstance(query_embedding, np.ndarray):
-                scores = (query_embedding @ results_embeddings.T).squeeze()
+                scores = (query_embedding @ search_results_embeddings.T).squeeze()
             else:
-                scores = (query_embedding @ results_embeddings.T).toarray().squeeze()
-            results = results.assign(score = scores)
-            results = results.sort_values(
+                scores = (query_embedding @ search_results_embeddings.T).toarray().squeeze()
+            search_results = search_results.assign(score = scores)
+            search_results = search_results.sort_values(
                 "score", 
                 ascending = False
             )
-    return results.to_json()
+    return search_results.to_json()
 
 @app.callback(
     Output("results_content", "children"),
-    Input("store_results", "data"),
+    Input("store_search_results", "data"),
 )
-def update_results_body(store_results):
+def update_search_results_body(store_search_results):
     output = []
-    if store_results:
-        results = pd.read_json(store_results)
-        for i, s in enumerate(results.text.head(candidates)):
+    if store_search_results:
+        search_results = pd.read_json(store_search_results)
+        for i, s in enumerate(search_results.text.head(candidates)):
             output.append(
                 html.Tr(
                     html.Td(
                         s, 
-                        id = dict(kind = "results_text", index = i)
+                        id = dict(kind = "search_results_text", index = i)
                     ),
                     style = dict(background = "lightpink")
                 )
@@ -432,11 +432,11 @@ def update_recommendations_body(recommendations, history, alert_checkbox):
     Input("submit_explore", "n_clicks"),
     Input({"kind":"history_card", "index":ALL}, "n_clicks"),
     # Input({"kind":"document_sentence", "index":ALL}, "n_clicks"),
-    State({"kind":"results_text", "index":ALL}, "style"),
+    State({"kind":"search_results_text", "index":ALL}, "style"),
     State({"kind":"recommendation_text", "index":ALL}, "style"),
     State("store_history", "data"),
     State("store_recommendations", "data"),
-    State("store_results", "data"),
+    State("store_search_results", "data"),
     State("document_dropdown", "value"),
     prevent_initial_call = True
 )
@@ -449,11 +449,11 @@ def update_history(
     submit_explore,
     history_card_clicks,
     # document_sentence_clicks,
-    results_text_styles,
+    search_results_text_styles,
     recommendation_text_styles,
     store_history,
     store_recommendations,
-    store_results,
+    store_search_results,
     dropdown_value
 ):
     ctx = dash.callback_context
@@ -470,18 +470,18 @@ def update_history(
         "store_sentence_embeddings",
     ]:
         recommendations = pd.read_json(store_recommendations)
-        results = pd.read_json(store_results)
+        search_results = pd.read_json(store_search_results)
         history = pd.read_json(store_history)
         sentences = pd.read_json(store_sentences)
         if identity == "submit_search":
             values = [True if x is not None and x["background"] == "lightgreen" else False 
-                      for x in results_text_styles]
-            new = results[["filename", "sentence", "text"]]\
+                      for x in search_results_text_styles]
+            new = search_results[["filename", "sentence", "text"]]\
             .head(candidates)\
             .assign(
                 relevance = [x if x is not None else pd.NA for x in values]
             )\
-            .set_index(results.index[:candidates])\
+            .set_index(search_results.index[:candidates])\
             .dropna()
             history = pd.concat(
                 (
@@ -953,11 +953,11 @@ def update_recommendation_colors(clicks):
         return {"background":"lightgreen"} if (clicks % 2) == 1 else {"background":"lightpink"}
 
 @app.callback(
-    Output({"kind":"results_text", "index":MATCH}, "style"),
-    Input({"kind":"results_text", "index":MATCH}, "n_clicks"),
+    Output({"kind":"search_results_text", "index":MATCH}, "style"),
+    Input({"kind":"search_results_text", "index":MATCH}, "n_clicks"),
     prevent_initial_call = True
 )
-def update_results_colors(clicks):
+def update_search_results_colors(clicks):
     ctx = dash.callback_context.triggered[0]
     prop_id = json.loads(ctx["prop_id"].split(".")[0])
     index = prop_id["index"]

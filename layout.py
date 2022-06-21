@@ -330,7 +330,7 @@ results_body = dbc.Container(
         html.Div(id = "results_content"),
         dbc.Card(
            dbc.Button(
-               "Submit",
+               "Submit Labels",
                id = "submit_search"
            )
         ),
@@ -396,7 +396,7 @@ recommendations_body = dbc.Container(
         alert,
         dbc.Card(
            dbc.Button(
-               "Submit",
+               "Submit Labels",
                id = "submit_explore",
            )
         ),
@@ -428,7 +428,7 @@ store_history = dcc.Store(
     id = "store_history"
 )
 store_recommendations = dcc.Store(id = "store_recommendations")
-store_results = dcc.Store(id = "store_results")
+store_search_results = dcc.Store(id = "store_search_results")
 store_papers = dcc.Store(id = "store_papers")
 store_vocabulary = dcc.Store(id = "store_vocabulary")
 download_csv = dcc.Download(id = "download_csv")
@@ -441,7 +441,7 @@ store = dbc.Spinner(
         store_query_embedding,
         store_history,
         store_recommendations,
-        store_results,
+        store_search_results,
         store_papers,
         store_vocabulary,
         download_csv,
