@@ -50,7 +50,8 @@ classifier_dropdown = dcc.Dropdown(
             "value":"Support Vector Machine", 
         },
     ],
-    value = "Random Forest",
+    # value = "Random Forest",
+    value = "Logistic Regression",
     id = "classifier_dropdown",
     clearable = False
 )
@@ -82,7 +83,7 @@ tab_tutorial = dbc.Tab(
     # disabled = True,
     children = dbc.Container(
         html.Iframe(
-            src = "https://www.youtube.com/embed/67Y-A1e8K6U",
+            src = "https://www.youtube.com/embed/0c4L5P9iSTo",
             height = 315,
             width = 560
         ),
