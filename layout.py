@@ -83,7 +83,7 @@ tab_tutorial = dbc.Tab(
     # disabled = True,
     children = dbc.Container(
         html.Iframe(
-            src = "https://www.youtube.com/embed/0c4L5P9iSTo",
+            src = "https://www.youtube.com/embed/lIoTAtcMdBA",
             height = 315,
             width = 560
         ),
