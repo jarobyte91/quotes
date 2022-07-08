@@ -30,7 +30,8 @@ embeddings_dropdown = dcc.Dropdown(
             "value":"Sentence-BERT Embeddings"
         },
     ],
-    value = "Character Trigrams",
+    # value = "Character Trigrams",
+    value = "Sentence-BERT Embeddings",
     id = "embeddings_dropdown",
     clearable = False
 )
@@ -83,7 +84,7 @@ tab_tutorial = dbc.Tab(
     # disabled = True,
     children = dbc.Container(
         html.Iframe(
-            src = "https://www.youtube.com/embed/lIoTAtcMdBA",
+            src = "https://www.youtube.com/embed/zR9XisDFQ7w",
             height = 315,
             width = 560
         ),
