@@ -355,7 +355,7 @@ tab_search = dbc.Tab(
 ###################################
 
 # number of sentences presented to the user
-candidates = 3
+candidates = 5
 
 alert = dbc.Modal(
     [
