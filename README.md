@@ -16,19 +16,17 @@ relevant to the query from the documents in the collection.
 
 ## Installation
 
+Tested on Python 3.8.12
+
     https://github.com/jarobyte91/quotes.git
     cd quotes
     pip install -r requirements.txt
     python app.py
 
-## Contribute
+## Contribute and Support
 
-- [Issue Tracker]()
-- [Pull Requests]()
-
-## Support 
-
-If you are having issues, feel free to send an email to [jarobyte91@gmail.com]()
+- [Issue Tracker](https://github.com/jarobyte91/quotes/issues)
+- [Pull Requests](https://github.com/jarobyte91/quotes/pulls)
 
 ## License
 
