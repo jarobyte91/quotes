@@ -4,6 +4,8 @@ In the process of writing an academic paper, researchers often spend a lot of ti
 
 You can watch the walkthrough of the system [here](https://www.youtube.com/watch?v=zR9XisDFQ7w).
 
+You can also try the system [here](http://selene.research.cs.dal.ca:37639/).
+
 ## Features
 
 The features that set apart QuOTeS from previous works are the following:
