@@ -25,11 +25,6 @@ Tested on Python 3.8.12
     pip install -r requirements.txt
     python app.py
 
-## Contribute and Support
-
-- [Issue Tracker](https://github.com/jarobyte91/quotes/issues)
-- [Pull Requests](https://github.com/jarobyte91/quotes/pulls)
-
 ## License
 
 This project is license under the MIT License
