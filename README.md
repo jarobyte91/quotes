@@ -3,21 +3,18 @@
 This is the source code for the paper [QuOTeS: Query-Oriented Technical Summarization](http://export.arxiv.org/abs/2306.11832) by Ramirez-Orta et al., 2023. 
 
 * [Video Tutorial](https://www.youtube.com/watch?v=zR9XisDFQ7w)
-* [Demo of the System](http://selene.research.cs.dal.ca:37639/).
+* [Demo of the System](http://selene.research.cs.dal.ca:37639/)
 
 ## Abstract
 
 In the process of writing an academic paper, researchers often spend a lot of time reviewing and summarizing papers to retrieve relevant facts, citations and data to put together the Introduction and Related Work sections of their upcoming research. To address this problem, we propose QuOTeS, an interactive system designed to retrieve sentences relevant to an abstract-like paragraph from a collection of academic papers with the purpose of assisting in the composition of new papers. QuOTeS integrates techniques from Query-Focused Extractive Summarization and Active Learning to provide Interactive Query-Focused Summarization of Scientific Documents. To measure the performance of the system, we performed a comprehensive user study where participants uploaded papers related to their own research and evaluated the system in terms of its usability, its features and the quality of the summaries it produces. Our results show that QuOTeS provides a satisfactory user experience and that it consistently provides query-focused summaries that are relevant, concise and complete.
 
-## Features
+## Contents
 
-The features that set apart QuOTeS from previous works are the following:
-
-* It receives a short paragraph and a collection of academic documents as input and returns the sentences
-relevant to the query from the documents in the collection.
-* It is an Interactive Query-Focused Summarization system.
-* It is able to extract the text directly from the academic PDFs (and other types of documents) provided by the user at runtime.
-* It integrates Active Learning with Relevance sampling in the task of Query-Focused Summarization of Scientific Documents.
+* The main files of the system are **layout.py**, **app.py** and **scores.py**. **layout.py** contains the static elements of the system, **app.py** contains the functions that make it work and **scores.py** contains the code to compute the sentences scores.
+* The **data** folder contains the raw JSON files collected during the user study of the system.
+* The **docker** folder contains the necessary files to build a Docker implementation of the system.
+* The **heroku** folder contains the necessary files to upload the Docker implementation to Heroku.
 
 ## Installation
 
@@ -27,6 +24,15 @@ Tested on Python 3.8.12
     cd quotes
     pip install -r requirements.txt
     python app.py
+
+To build the Docker implementation, the process was split into two steps to make it easier to update:
+
+    sh deps_build.sh
+    sh build.sh
+
+Once the Docker image has been built, you can use the system by by running:
+
+    sh run.sh
 
 ## License
 
