@@ -45,6 +45,11 @@ To build the Docker implementation, the process was split into two steps to make
     # To run the system:
     sh run.sh
 
+## Contribute & Support
+
+* [Issue Tracker](https://github.com/jarobyte91/quotes/issues)
+* [Pull Requests](https://github.com/jarobyte91/quotes/pulls)
+
 ## License
 
 This project is license under the MIT License
