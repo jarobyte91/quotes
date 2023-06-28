@@ -1,1 +1,1 @@
-docker build --tag=requirements:latest --file=Dockerfile_dependencies.txt .
+docker build --tag=requirements:latest --file=deps_Dockerfile.txt .
