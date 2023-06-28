@@ -25,11 +25,13 @@ Tested on Python 3.8.12
 
     # QuOTeS requires the Python package pdftotext, which can be cumbersome to install
     # To install it using conda:
-    # conda install -c conda-forge poppler pdftotext
+    # conda install -c conda-forge pdftotext
 
     git clone https://github.com/jarobyte91/quotes.git
     cd quotes
     pip install -r requirements.txt
+    
+    # To run the system:
     python app.py
 
 To build the Docker implementation, the process was split into two steps to make it easier to update:
@@ -37,8 +39,7 @@ To build the Docker implementation, the process was split into two steps to make
     sh build_dependencies.sh
     sh build.sh
 
-Once the Docker image has been built, you can use the system by by running:
-
+    # To run the system:
     sh run.sh
 
 ## License
