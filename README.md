@@ -3,7 +3,7 @@
 This is the source code for the paper [QuOTeS: Query-Oriented Technical Summarization](http://export.arxiv.org/abs/2306.11832) by Ramirez-Orta et al., 2023. 
 
 * [Video Tutorial](https://www.youtube.com/watch?v=zR9XisDFQ7w)
-* [Demo of the System](http://selene.research.cs.dal.ca:37639/)
+* [Online Demo](http://selene.research.cs.dal.ca:37639/)
 
 ## Abstract
 
