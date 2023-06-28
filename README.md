@@ -20,7 +20,11 @@ In the process of writing an academic paper, researchers often spend a lot of ti
 
 Tested on Python 3.8.12
 
-    https://github.com/jarobyte91/quotes.git
+    # QuOTeS requires the Python package pdftotext, which can be cumbersome to install
+    # To install it using conda:
+    # conda install -c conda-forge poppler pdftotext
+
+    git clone https://github.com/jarobyte91/quotes.git
     cd quotes
     pip install -r requirements.txt
     python app.py

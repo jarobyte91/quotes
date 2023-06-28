@@ -1,5 +1,6 @@
 Brotli==1.0.9
 certifi==2021.10.8
+chardet==5.1.0
 charset-normalizer==2.0.7
 click==8.0.3
 dash==2.0.0
