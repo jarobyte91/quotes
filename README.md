@@ -11,7 +11,10 @@ In the process of writing an academic paper, researchers often spend a lot of ti
 
 ## Contents
 
-* The main files of the system are **layout.py**, **app.py** and **scores.py**. **layout.py** contains the static elements of the system, **app.py** contains the functions that make it work and **scores.py** contains the code to compute the sentences scores.
+* The main files of the system are **layout.py**, **app.py** and **scores.py**:
+  * **layout.py** contains the static elements of the system
+  * **app.py** contains the callbacks that make it work
+  * **scores.py** contains the code to compute the sentences scores
 * The **data** folder contains the raw JSON files collected during the user study of the system.
 * The **docker** folder contains the necessary files to build a Docker implementation of the system.
 * The **heroku** folder contains the necessary files to upload the Docker implementation to Heroku.
@@ -31,7 +34,7 @@ Tested on Python 3.8.12
 
 To build the Docker implementation, the process was split into two steps to make it easier to update:
 
-    sh deps_build.sh
+    sh build_dependencies.sh
     sh build.sh
 
 Once the Docker image has been built, you can use the system by by running:
