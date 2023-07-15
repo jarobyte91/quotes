@@ -1,7 +1,8 @@
 # QuOTeS: Query-Oriented Technical Summarization
 
-This is the source code for the paper [QuOTeS: Query-Oriented Technical Summarization](http://export.arxiv.org/abs/2306.11832) by Ramirez-Orta et al., 2023. 
+This is the source code for the paper *QuOTeS: Query-Oriented Technical Summarization* by Ramirez-Orta et al., 2023. 
 
+* [Arxiv Preprint](http://export.arxiv.org/abs/2306.11832) 
 * [Video Tutorial](https://www.youtube.com/watch?v=zR9XisDFQ7w)
 * [Online Demo](http://selene.research.cs.dal.ca:37639/)
 
@@ -34,7 +35,7 @@ Tested on Python 3.8.12
     # To run the system:
     python app.py
 
-To build the Docker implementation, the process was split into two steps to make it easier to update:
+To build the Docker implementation, the process was split into three steps to make it easier to update:
 
     # To build the basic dependencies of the system
     sh build_dependencies.sh
